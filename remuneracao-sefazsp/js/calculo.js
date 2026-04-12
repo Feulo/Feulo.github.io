@@ -31,8 +31,8 @@ function calcSallary() {
 
 
 	// obtém os parâmetros fornecidos pelo usuário
-	let cargo = document.getElementById("cargo").value;
-	let funcao = document.getElementById("funcao").value;
+	let cargo = Number(document.getElementById("cargo").value);
+	let funcao = Number(document.getElementById("funcao").value);
 	let diasAlimentacao = Number(document.getElementById("diasAlimentacao").value);
 	let participacao = Number(document.getElementById("participacaoResultados").value);
 	let previdenciaComplementar = Number(document.getElementById("previdenciaComplementar").value)/100;
@@ -48,10 +48,9 @@ function calcSallary() {
 	let tempoServico = Number(document.getElementById("tempoServico").value);
 	
 	// VENCIMENTOS
-	
 	let vb = VB_COTAS[cargo - 1] * VALOR_COTA;
-	let pl = PL_COTAS[cargo - 1] * VALOR_COTA;
-	let pp = PP_COTAS[cargo - 1] * VALOR_COTA;
+	let pl = PL_COTAS[funcao - 1] * VALOR_COTA;
+	let pp = PP_COTAS[funcao - 1] * VALOR_COTA;
 	let pr = participacao * PR_COTAS[cargo - 1][funcao - 1] * VALOR_COTA;
 	let aliquotaQq = 1.05 ** Math.floor(tempoServico / 5) - 1
 	let qq = (vb + pl + pp) * aliquotaQq;
