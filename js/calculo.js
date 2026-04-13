@@ -83,9 +83,9 @@ function calcSallary() {
 	
 	document.getElementById("vbCotas").innerText= VB_COTAS[cargo - 1];
     document.getElementById("vb").innerText = numberToReal(vb);
-	document.getElementById("ppCotas").innerText = PP_COTAS[cargo - 1];
+	document.getElementById("ppCotas").innerText = PP_COTAS[funcao - 1];
 	document.getElementById("pp").innerText = numberToReal(pp);
-	document.getElementById("plCotas").innerText = PL_COTAS[cargo - 1];
+	document.getElementById("plCotas").innerText = PL_COTAS[funcao - 1];
 	document.getElementById("pl").innerText = numberToReal(pl);
 	document.getElementById("aliquotaQq").innerText = (aliquotaQq * 100).toFixed(2);
 	document.getElementById("qq").innerText = numberToReal(qq);
