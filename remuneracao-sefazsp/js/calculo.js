@@ -49,7 +49,27 @@ const FUNCOES = [
     { id: 36, pl: 1680, pp: 3300, pr: [3403, 3510, 3616, 3723, 3829, 3936] }, // Representante Fiscal
     { id: 37, pl: 1680, pp: 3300, pr: [3403, 3510, 3616, 3723, 3829, 3936] }, // Juiz com Dedicação Exclusiva
     { id: 38, pl: 1680, pp: 3300, pr: [3403, 3510, 3616, 3723, 3829, 3936] }, // Julgador Fiscal
-    { id: 39, pl: 0, pp: 2700, pr: [2150, 2280, 2410, 2540, 2670, 2800] } // Função Básica (Sem designação)
+    { id: 39, pl: 0, pp: 2700, pr: [2150, 2280, 2410, 2540, 2670, 2800] }, // Função Básica (Sem designação)
+    
+    // Novas Funções (Complementares das Tabelas de PR)
+    { id: 40, pl: 2400, pp: 3600, pr: [0, 4280, 4410, 4540, 4670, 4800] }, // Coordenador da Administração Tributária
+    { id: 41, pl: 2160, pp: 3570, pr: [4150, 4237, 4366, 4495, 4623, 4752] }, // Assessor Fiscal Especial IV
+    { id: 42, pl: 2380, pp: 3595, pr: [0, 4152, 4278, 4404, 4530, 4656] }, // Coordenador Adjunto da Administração Tributária
+    { id: 43, pl: 2380, pp: 3595, pr: [0, 4152, 4278, 4404, 4530, 4656] }, // Subcoordenador da Administração Tributária
+    { id: 44, pl: 2280, pp: 3585, pr: [0, 4126, 4252, 4378, 4504, 4630] }, // Subcoordenador Adjunto da Administração Tributária
+    { id: 45, pl: 2160, pp: 3570, pr: [3943, 4066, 4190, 4313, 4437, 4560] }, // Assessor Fiscal Especial III
+    { id: 46, pl: 2070, pp: 3480, pr: [0, 3852, 3969, 4086, 4203, 4320] }, // Delegado Regional Tributário
+    { id: 47, pl: 1980, pp: 3450, pr: [3735, 3852, 3969, 4086, 4203, 4320] }, // Assessor Fiscal III
+    { id: 48, pl: 1980, pp: 3450, pr: [3631, 3745, 3859, 3973, 4086, 4200] }, // Consultor Tributário Chefe - Cotepe
+    { id: 49, pl: 2070, pp: 3480, pr: [3528, 3638, 3749, 3859, 3970, 4080] }, // Assessor Fiscal Especial II
+    { id: 50, pl: 1980, pp: 3450, pr: [3528, 3638, 3749, 3859, 3970, 4080] }, // Assistente Fiscal Chefe I
+    { id: 51, pl: 1980, pp: 3450, pr: [3528, 3638, 3749, 3859, 3970, 4080] }, // Assessor Fiscal II
+    { id: 52, pl: 1760, pp: 3350, pr: [3486, 3595, 3705, 3814, 3923, 4032] }, // Assessor Fiscal Especial I
+    { id: 53, pl: 1680, pp: 3300, pr: [3403, 3510, 3616, 3723, 3829, 3936] }, // Assessor Fiscal I
+    { id: 54, pl: 1680, pp: 3300, pr: [3403, 3510, 3616, 3723, 3829, 3936] }, // Assistente Fiscal III
+    { id: 55, pl: 1680, pp: 3300, pr: [3279, 3381, 3484, 3587, 3689, 3792] }, // Assistente Fiscal II
+    { id: 56, pl: 1680, pp: 3300, pr: [3279, 3381, 3484, 3587, 3689, 3792] }, // Assistente Fiscal de Cobrança
+    { id: 57, pl: 1680, pp: 3300, pr: [3279, 3381, 3484, 3587, 3689, 3792] }  // Assistente Fiscal I
 ];
 
 function numberToReal(numero) {
