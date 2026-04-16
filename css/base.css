@@ -1,36 +1,109 @@
+/* Variáveis globais para manter um padrão de cores (Fácil de alterar depois) */
+:root {
+    --cor-primaria: #1e3a8a; /* Um azul institucional escuro (padrão governo/banco) */
+    --cor-secundaria: #f1f5f9; /* Fundo cinza bem claro para seções */
+    --cor-texto: #334155; /* Cinza escuro (mais confortável para leitura que o preto puro) */
+    --cor-borda: #cbd5e1;
+}
+
+/* Título Principal */
 .titulo {
-    font-size: 1.2rem;
+    font-size: 1.5rem;
+    font-weight: 700;
     color: white;
+    background-color: var(--cor-primaria);
     text-align: center;
+    padding: 1rem;
+    border-radius: 8px 8px 0 0; /* Arredonda só as pontas de cima (estilo "card") */
+    margin: 0;
 }
 
+/* Cabeçalhos de Seção (Ex: Vencimentos, Deduções) */
 .secao {
-    font-size: 1.1rem;
-    font-weight: 500;
-    padding-top: 2pt;
-    padding-bottom: 2pt;
-    text-align: center;
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: var(--cor-primaria);
+    background-color: var(--cor-secundaria);
+    text-align: left; /* Textos de seção à esquerda costumam ler melhor */
+    padding: 0.5rem 1rem;
+    margin-top: 1.5rem;
+    margin-bottom: 0.5rem;
+    border-left: 4px solid var(--cor-primaria); /* Dá um detalhe elegante na lateral */
+    border-radius: 0 4px 4px 0;
 }
 
+/* Divisões menores */
 .subsecao {
     font-size: 1rem;
-    font-weight: 500;
-    padding-top: 2pt;
-    padding-bottom: 2pt;
+    font-weight: 600;
+    color: var(--cor-texto);
+    padding: 0.5rem 0;
+    margin-top: 1rem;
+    border-bottom: 1px solid var(--cor-borda); /* Linha sutil separando os assuntos */
 }
 
+/* Agrupamento de formulário (Label + Input) */
 .form-group {
-    padding-top: 3pt;
-    padding-bottom: 3pt;
+    padding: 0.5rem 0;
+    display: flex;
+    flex-direction: column; /* Deixa o label em cima e o input embaixo */
+    gap: 0.3rem; /* Espaço pequeno entre label e input */
 }
 
+/* Linha de Resultado (Estilo Holerite) */
 .item-resultado {
-    padding-top: 1pt;
-    padding-bottom: 1pt;
+    padding: 0.6rem 0;
+    display: flex;
+    justify-content: space-between; /* Joga o nome pra esquerda e o R$ pra direita */
+    align-items: center;
+    border-bottom: 1px dashed #e2e8f0; /* Linha tracejada separando os valores */
+    color: var(--cor-texto);
 }
 
+/* Remove a linha tracejada do último item da lista */
+.item-resultado:last-child {
+    border-bottom: none;
+}
+
+/* Aviso / Alerta (Ficou mais amigável e menos "erro de Windows 95") */
 .avisoRemuneracao {
-    background-color: yellow;
-    color: black;
+    background-color: #fef08a; /* Amarelo suave */
+    color: #854d0e; /* Texto em marrom/amarelo escuro para dar contraste */
+    font-weight: 500;
+    font-size: 0.95rem;
+    padding: 0.75rem 1rem;
+    border-radius: 6px;
+    border-left: 4px solid #eab308; /* Faixa lateral amarela forte */
+    margin-top: 1rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 
+/* Mantém o comportamento de jogar um para cada lado */
+.item-resultado {
+    padding: 0.6rem 0;
+    display: flex;
+    justify-content: space-between; 
+    align-items: center;
+    border-bottom: 1px dashed var(--cor-borda);
+    color: var(--cor-texto);
+}
+
+/* Agrupa o nome e as cotas sem deixar esticar */
+.item-esquerda {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem; /* Define um espaço fixo e bonito entre o nome e os parênteses */
+}
+
+/* Deixa a informação das cotas um pouco mais discreta */
+.item-cotas {
+    color: #64748b; /* Um cinza mais suave */
+    font-size: 0.9rem; /* Um pouquinho menor que o texto principal */
+}
+
+/* (Opcional) Deixa os valores alinhados à direita e com tamanho fixo, se quiser alinhar as vírgulas perfeitamente */
+.item-valor {
+    font-weight: 500;
+    min-width: 120px; 
+    text-align: right;
+}
