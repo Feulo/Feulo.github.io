@@ -1,206 +1,317 @@
 <!DOCTYPE html>
-<html lang = "pt-br">
+<html lang="pt-br">
 <head>
-	<meta charset = "utf-8"/>
-	<meta content="width=device-width, initial-scale=1, maximum-scale=1" name="viewport">
-	<title>Calculadora de Remunerações :: Agente Fiscal de Rendas - SEFAZ-SP</title>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1, maximum-scale=1" name="viewport">
+    <title>Calculadora de Remunerações :: Agente Fiscal de Rendas - SEFAZ-SP</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link href="./css/base.css" rel="stylesheet">
 </head>
 <body>
-	<header class="col-lg-12 bg-primary p-3">
-        <div class="titulo">
-            Calculadora de Remuneração - Escrevente Técnico Judiciário - TJ/SP
+    <header class="col-lg-12 bg-primary p-3">
+        <div class="titulo text-white text-center fs-4 fw-bold">
+            Calculadora de Remuneração - Auditor Fiscal da Receita Estadual - SEFAZ/SP
         </div>
     </header>
-	<main class="row col-lg-12">
-		<section class="formulario col-lg-6 py-3 px-4" id="formulario">
-			<form>
-                <div class="secao">
+    
+    <main class="row col-lg-12 m-0">
+        <section class="formulario col-lg-6 py-3 px-4" id="formulario">
+            <form>
+                <div class="secao fs-5 fw-bold text-primary mb-3 border-start border-primary border-4 ps-2 bg-light">
                     Informações para o cálculo
                 </div>
-				<div class="subsecao">Vencimentos:</div>
-				<div class="form-group">
-					<label for="cargo">Cargo e Nível: </label>
-					<select id="cargo" class="form-select">
-						<option value="1">Agente Fiscal de Rendas I</option>
-						<option value="2">Agente Fiscal de Rendas II</option>
-						<option value="3">Agente Fiscal de Rendas III</option>
-						<option value="4">Agente Fiscal de Rendas IV</option>
-						<option value="5">Agente Fiscal de Rendas V</option>
-						<option value="6">Agente Fiscal de Rendas VI</option>
-					</select>
-					<label for="funcao">Função: </label>
-					<select id="funcao" class="form-select">
-						<option value="31">Assistente Fiscal I</option>
-						<option value="29">Assistente Fiscal II</option>
-						<option value="25">Assistente Fiscal III</option>
-						<option value="16">Assistente Fiscal IV</option>
-						<option value="13">Assistente Fiscal V</option>
-						<option value="18">Assistente Fiscal Chefe I</option>
-						<option value="12">Assistente Fiscal Chefe II</option>
-						<option value="32">Assistente Fiscal - Função Básica</option>
-						<option value="24">Assessor Fiscal I</option>
-						<option value="15">Assessor Fiscal II</option>
-						<option value="7">Assessor Fiscal III</option>
-						<option value="2">Assessor Fiscal IV</option>
-						<option value="33">Assessor Fiscal - Função Básica</option>
-						<option value="28">Chefe</option>
-						<option value="23">Consultor Tributário</option>
-						<option value="21">Consultor Tributário Chefe</option>
-						<option value="14">Consultor Tributário Chefe - COTEPE</option>
-						<option value="34">Consultor Tributário - Função Básica</option>
-						<option value="4">Coordenador Adjunto Assuntos Administrativos</option>
-						<option value="3">Coordenador Adjunto da Administração Tributária</option>
-						<option value="1">Coordenador da Administração Tributária</option>
-						<option value="17">Corregedor Fiscal</option>
-						<option value="9">Delegado Regional Tributário</option>
-						<option value="10">Delegado Tributário de Julgamento</option>
-						<option value="6">Diretor</option>
-						<option value="8">Diretor Adjunto</option>
-						<option value="37">Fiscalização Direta de Tributos</option>
-						<option value="22">Inspetor Fiscal</option>
-						<option value="26">Juiz com Dedicação Exclusiva</option>
-						<option value="30">Julgador Fiscal</option>
-						<option value="35">Julgador Fiscal - Função Básica</option>
-						<option value="5">Presidente e Vice-Presidente do TIT</option>
-						<option value="27">Representante Fiscal</option>
-						<option value="11">Representante Fiscal Chefe</option>
-						<option value="19">Representante Fiscal Chefe de Assistência</option>
-						<option value="36">Representante Fiscal - Função Básica</option>
-						<option value="20">Supervisor de Fiscalização</option>
-					</select>
-				</div>
-				<div class="form-group">
-					<label>Participação nos Resultados: </label>
-					<select id="participacaoResultados" class="form-select">
-						<option value = "1">Sim</option>
-						<option value = "0">Não</option>
-					</select>
-				</div>
-				
-				
-				<!--<div class="form-group">
-					<label>Dependentes para fins de IRPF: </label>
-					<input type = "number" id="dependentes" class="form-control" min = "0" max = "20" value = "0">
-				</div>-->
-				<div class="form-group">
-					<label>Tempo de Serviço: </label>
-					<input type = "number" id="tempoServico" class="form-control" min = "0" max = "30" value = "0">
-				</div>
-				<div class="form-group">
-					<label>Previdência Complementar (em %): </label>
-					<input type = "number" id="previdenciaComplementar" class="form-control" step = "0.5" min = "0" max = "10" value = "0">
-				</div>
-				<div class="subsecao">
-					Benefícios:
-				</div>
-				
-				<div class="form-group">
-					<label>Número de dias de Auxílio Refeição (dias de trabalho efetivo): </label>
-					<input type = "number" id="diasAlimentacao" class="form-control" min = "0" max = "31" value = "20">
-				</div>
-				<div class="form-group">
-					<label>Auxílio Transporte ATIN (Nos Conformes): </label>
-					<select id="atin" class="form-select">
-						<option value = "1">Sim</option>
-						<option value = "0">Não</option>
-					</select>
-				</div>
-				<div class="subsecao">
-					Teto remuneratório:
-					<select id="tipoTeto" class="form-select">
-						<option value = "sp">Vencimento Bruto do Governador de SP</option>
-						<option value = "stf">Vencimento Bruto do Ministro do STF</option>
-					</select>
-				</div>
-				<div class="subsecao">
-					IAMSPE:
-				</div>
-				<div class="form-group">
-					<label>IAMSPE e faixa etária: </label>
-					<select id="iamspe" class="form-select">
-						<option value = "0.02">Sim (menos de 59 anos)
-						<option value = "0.03">Sim (a partir de 59 anos)</option>
-						<option value = "0">Não
-					</select>
-				</div>
-				<div class="form-group">
-					<label>Beneficiários do IAMSPE com menos de 59 anos: </label> 
-					<input type = "number" id="dependentesIamspeIdadeInferior" class="form-control" min = "0" max = "20"
-						value = "0">
-				</div>
-				<div class="form-group">
-					<label>Beneficiários do IAMSPE com 59 anos ou mais: </label>
-					<input type = "number" id="dependentesIamspeIdadeSuperior" class="form-control" min = "0" max = "20"
-						value = "0">
-				</div>
-				<div class="form-group">
-					<label>Agregados do IAMSPE com menos de 59 anos: </label>
-					<input type = "number" id="agregadosIamspeIdadeInferior" class="form-control" min = "0" max = "20"
-						value = "0">
-				</div>
-				<div class="form-group">
-					<label>Agregados do IAMSPE com 59 anos ou mais: </label>
-					<input type = "number" id="agregadosIamspeIdadeSuperior" class="form-control"  min = "0" max = "20" value = "0">
-				</div>
-                <div class="d-grid gap-2 py-2">
-					<input type = "button" class="btn btn-success btn-block" value = "Calcular" onclick = "calcSallary()">
-				</div>	
-			</form>
-		</div>
-		</section>
-		<section id="resultado" id="resultado" class="conteudo col-lg-6 py-3 px-4">
-			<div class="secao">Resultado do cálculo</div>
-			<div class="subsecao">Cálculo da remuneração:</div>
-			<div class="item-resultado">(+) Vencimento base<sup><a href="#nota1">1</a></sup> (<span id="vbCotas"></span> cotas<sup><a href="#nota6">6</a></sup>): <span id="vb"></span></div>
-			<div class="item-resultado">(+) Prêmio Produtividade<sup><a href="#nota1">1</a></sup> (<span id="ppCotas"></span> cotas<sup><a href="#nota6">6</a></sup>): <span id="pp"></span></div>
-			<div class="item-resultado">(+) Pro Labore<sup><a href="#nota1">1</a></sup> (<span id="plCotas"></span> cotas<sup><a href="#nota6">6</a></sup>): <span id="pl"></span></div>
-			<div class="item-resultado">(+) Quinquênios (<span id="aliquotaQq"></span>%): <span id="qq"></span></div>
-			<div class="item-resultado">(+) Sexta Parte (<span id="aliquota6p"></span>%): <span id="6p"></span></div>
-			<div class="item-resultado">(+) Participação nos Resultados<sup><a href="#nota1">1</a>,<a href="#nota2">2</a></sup> (<span id="prCotas"></span> cotas): <span id="pr"></span></div>
-			<div class="item-resultado">(=) Valor bruto: <span id="remuneracaoBruta"></span></div>
-			<div class="subsecao">Deduções</div>
-			<div class="item-resultado">(−) Dedução teto<sup><a href="#nota3">3</a></sup> (<span id="valorTeto"></span>): <span id="deducaoTeto"></span></div>
-			<div class="item-resultado">(−) Regime Próprio Previdenciário<sup><a href="#nota4">4</a></sup>: <span id="rpps"></span></div>
-			<div class="item-resultado">(−) Previdência Complementar: <span id="spprev"></span></div>
-			<div class="item-resultado">(−) IRRF: <span id="irrf"></span></div>
-			<div class="item-resultado">(−) IAMSPE<sup><a href="#nota5">5</a></sup>: <span id="descontoIamspe"></span></div>
-			<div class="item-resultado">(=) Valor líquido sem indenizações: <span id="remuneracaoLiquida"></span></div>
-			<div class="subsecao">Verbas indenizatórias</div>
-			<div class="item-resultado">(+) Auxílio Refeição (R$ 52,68 por dia): <span id="vr"></span></div>
-			<div class="item-resultado">(+) Nos Conformes (300 UFESPs<sup><a href="#nota7">7</a></sup>): <span id="nc"></span></div>
-			<div class="item-resultado">(=) Vencimentos:  <span id="vencimentos"></span></div>
+                
+                <div class="subsecao fw-bold border-bottom mb-2 pb-1">Vencimentos:</div>
+                
+                <div class="form-group mb-2">
+                    <label for="cargo" class="form-label mb-1">Cargo e Nível: </label>
+                    <select id="cargo" class="form-select">
+                        <option value="1">Agente Fiscal de Rendas I</option>
+                        <option value="2">Agente Fiscal de Rendas II</option>
+                        <option value="3">Agente Fiscal de Rendas III</option>
+                        <option value="4">Agente Fiscal de Rendas IV</option>
+                        <option value="5">Agente Fiscal de Rendas V</option>
+                        <option value="6">Agente Fiscal de Rendas VI</option>
+                    </select>
+                </div>
+                
+                <div class="form-group mb-2">
+                    <label for="funcao" class="form-label mb-1">Função: </label>
+                    <select id="funcao" class="form-select">
+                        <option value="31">Assistente Fiscal I</option>
+                        <option value="29">Assistente Fiscal II</option>
+                        <option value="25">Assistente Fiscal III</option>
+                        <option value="16">Assistente Fiscal IV</option>
+                        <option value="13">Assistente Fiscal V</option>
+                        <option value="18">Assistente Fiscal Chefe I</option>
+                        <option value="12">Assistente Fiscal Chefe II</option>
+                        <option value="32">Assistente Fiscal - Função Básica</option>
+                        <option value="24">Assessor Fiscal I</option>
+                        <option value="15">Assessor Fiscal II</option>
+                        <option value="7">Assessor Fiscal III</option>
+                        <option value="2">Assessor Fiscal IV</option>
+                        <option value="33">Assessor Fiscal - Função Básica</option>
+                        <option value="28">Chefe</option>
+                        <option value="23">Consultor Tributário</option>
+                        <option value="21">Consultor Tributário Chefe</option>
+                        <option value="14">Consultor Tributário Chefe - COTEPE</option>
+                        <option value="34">Consultor Tributário - Função Básica</option>
+                        <option value="4">Coordenador Adjunto Assuntos Administrativos</option>
+                        <option value="3">Coordenador Adjunto da Administração Tributária</option>
+                        <option value="1">Coordenador da Administração Tributária</option>
+                        <option value="17">Corregedor Fiscal</option>
+                        <option value="9">Delegado Regional Tributário</option>
+                        <option value="10">Delegado Tributário de Julgamento</option>
+                        <option value="6">Diretor</option>
+                        <option value="8">Diretor Adjunto</option>
+                        <option value="37">Fiscalização Direta de Tributos</option>
+                        <option value="22">Inspetor Fiscal</option>
+                        <option value="26">Juiz com Dedicação Exclusiva</option>
+                        <option value="30">Julgador Fiscal</option>
+                        <option value="35">Julgador Fiscal - Função Básica</option>
+                        <option value="5">Presidente e Vice-Presidente do TIT</option>
+                        <option value="27">Representante Fiscal</option>
+                        <option value="11">Representante Fiscal Chefe</option>
+                        <option value="19">Representante Fiscal Chefe de Assistência</option>
+                        <option value="36">Representante Fiscal - Função Básica</option>
+                        <option value="20">Supervisor de Fiscalização</option>
+                    </select>
+                </div>
+                
+                <div class="form-group mb-2">
+                    <label for="participacaoResultados" class="form-label mb-1">Participação nos Resultados: </label>
+                    <select id="participacaoResultados" class="form-select">
+                        <option value="1">Sim</option>
+                        <option value="0">Não</option>
+                    </select>
+                </div>
+                
+                <div class="form-group mb-2">
+                    <label for="tempoServico" class="form-label mb-1">Tempo de Serviço: </label>
+                    <input type="number" id="tempoServico" class="form-control" min="0" max="30" value="0">
+                </div>
+                
+                <div class="form-group mb-2">
+                    <label for="previdenciaComplementar" class="form-label mb-1">Previdência Complementar (em %): </label>
+                    <input type="number" id="previdenciaComplementar" class="form-control" step="0.5" min="0" max="10" value="0">
+                </div>
+                
+                <div class="subsecao fw-bold border-bottom mt-3 mb-2 pb-1">Benefícios:</div>
+                
+                <div class="form-group mb-2">
+                    <label for="diasAlimentacao" class="form-label mb-1">Número de dias de Auxílio Refeição (dias de trabalho efetivo): </label>
+                    <input type="number" id="diasAlimentacao" class="form-control" min="0" max="31" value="20">
+                </div>
+                
+                <div class="form-group mb-2">
+                    <label for="atin" class="form-label mb-1">Auxílio Transporte ATIN (Nos Conformes): </label>
+                    <select id="atin" class="form-select">
+                        <option value="1">Sim</option>
+                        <option value="0">Não</option>
+                    </select>
+                </div>
+                
+                <div class="subsecao fw-bold border-bottom mt-3 mb-2 pb-1">Teto remuneratório:</div>
+                <div class="form-group mb-2">
+                    <select id="tipoTeto" class="form-select">
+                        <option value="sp">Vencimento Bruto do Governador de SP</option>
+                        <option value="stf">Vencimento Bruto do Ministro do STF</option>
+                        <option value="iludir">Quero me iludir (Teto e cota STF)</option>
+                    </select>
+                </div>
+                
+                <div class="subsecao fw-bold border-bottom mt-3 mb-2 pb-1">IAMSPE:</div>
+                
+                <div class="form-group mb-2">
+                    <label for="iamspe" class="form-label mb-1">IAMSPE e faixa etária: </label>
+                    <select id="iamspe" class="form-select">
+                        <option value="0.02">Sim (menos de 59 anos)</option>
+                        <option value="0.03">Sim (a partir de 59 anos)</option>
+                        <option value="0">Não</option>
+                    </select>
+                </div>
+                
+                <div class="form-group mb-2">
+                    <label for="dependentesIamspeIdadeInferior" class="form-label mb-1">Beneficiários do IAMSPE com menos de 59 anos: </label> 
+                    <input type="number" id="dependentesIamspeIdadeInferior" class="form-control" min="0" max="20" value="0">
+                </div>
+                
+                <div class="form-group mb-2">
+                    <label for="dependentesIamspeIdadeSuperior" class="form-label mb-1">Beneficiários do IAMSPE com 59 anos ou mais: </label>
+                    <input type="number" id="dependentesIamspeIdadeSuperior" class="form-control" min="0" max="20" value="0">
+                </div>
+                
+                <div class="form-group mb-2">
+                    <label for="agregadosIamspeIdadeInferior" class="form-label mb-1">Agregados do IAMSPE com menos de 59 anos: </label>
+                    <input type="number" id="agregadosIamspeIdadeInferior" class="form-control" min="0" max="20" value="0">
+                </div>
+                
+                <div class="form-group mb-2">
+                    <label for="agregadosIamspeIdadeSuperior" class="form-label mb-1">Agregados do IAMSPE com 59 anos ou mais: </label>
+                    <input type="number" id="agregadosIamspeIdadeSuperior" class="form-control" min="0" max="20" value="0">
+                </div>
+                
+                <div class="d-grid gap-2 py-3">
+                    <button type="button" class="btn btn-success btn-lg" onclick="calcSallary()">Calcular</button>
+                </div>  
+            </form>
+        </section>
+        
+        <section id="resultado" class="conteudo col-lg-6 py-3 px-4">
+            <div class="secao fs-5 fw-bold text-primary mb-3 border-start border-primary border-4 ps-2 bg-light">Resultado do cálculo</div>
+            
+            <div class="subsecao fw-bold border-bottom mb-2 pb-1">Cálculo da remuneração:</div>
+            
+            <div class="item-resultado">
+                <div class="item-esquerda">
+                    <span>(+) Vencimento base<sup><a href="#nota1">1</a></sup></span>
+                    <span class="item-cotas">(<span id="vbCotas"></span> cotas<sup><a href="#nota6">6</a></sup>)</span>
+                </div>
+                <span class="item-valor" id="vb"></span>
+            </div>
+            
+            <div class="item-resultado">
+                <div class="item-esquerda">
+                    <span>(+) Prêmio Produtividade<sup><a href="#nota1">1</a></sup></span>
+                    <span class="item-cotas">(<span id="ppCotas"></span> cotas<sup><a href="#nota6">6</a></sup>)</span>
+                </div>
+                <span class="item-valor" id="pp"></span>
+            </div>
+            
+            <div class="item-resultado">
+                <div class="item-esquerda">
+                    <span>(+) Pro Labore<sup><a href="#nota1">1</a></sup></span>
+                    <span class="item-cotas">(<span id="plCotas"></span> cotas<sup><a href="#nota6">6</a></sup>)</span>
+                </div>
+                <span class="item-valor" id="pl"></span>
+            </div>
+            
+            <div class="item-resultado">
+                <div class="item-esquerda">
+                    <span>(+) Quinquênios</span>
+                    <span class="item-cotas">(<span id="aliquotaQq"></span>)</span>
+                </div>
+                <span class="item-valor" id="qq"></span>
+            </div>
+            
+            <div class="item-resultado">
+                <div class="item-esquerda">
+                    <span>(+) Sexta Parte</span>
+                    <span class="item-cotas">(<span id="aliquota6p"></span>)</span>
+                </div>
+                <span class="item-valor" id="6p"></span>
+            </div>
+            
+            <div class="item-resultado border-bottom mb-2 pb-2">
+                <div class="item-esquerda">
+                    <span>(+) Participação nos Resultados<sup><a href="#nota1">1</a>,<a href="#nota2">2</a></sup></span>
+                    <span class="item-cotas">(<span id="prCotas"></span> cotas)</span>
+                </div>
+                <span class="item-valor" id="pr"></span>
+            </div>
+            
+            <div class="item-resultado fw-bold">
+                <div class="item-esquerda">
+                    <span>(=) Valor bruto</span>
+                </div>
+                <span class="item-valor" id="remuneracaoBruta"></span>
+            </div>
+            
+            <div class="subsecao fw-bold border-bottom mt-3 mb-2 pb-1">Deduções</div>
+            
+            <div class="item-resultado text-danger">
+                <div class="item-esquerda">
+                    <span>(−) Dedução teto<sup><a href="#nota3">3</a></sup></span>
+                    <span class="item-cotas">(<span id="valorTeto"></span>)</span>
+                </div>
+                <span class="item-valor" id="deducaoTeto"></span>
+            </div>
+            
+            <div class="item-resultado text-danger">
+                <div class="item-esquerda">
+                    <span>(−) Regime Próprio Previdenciário<sup><a href="#nota4">4</a></sup></span>
+                </div>
+                <span class="item-valor" id="rpps"></span>
+            </div>
+            
+            <div class="item-resultado text-danger">
+                <div class="item-esquerda">
+                    <span>(−) Previdência Complementar</span>
+                </div>
+                <span class="item-valor" id="spprev"></span>
+            </div>
+            
+            <div class="item-resultado text-danger">
+                <div class="item-esquerda">
+                    <span>(−) IRRF</span>
+                </div>
+                <span class="item-valor" id="irrf"></span>
+            </div>
+            
+            <div class="item-resultado border-bottom mb-2 pb-2 text-danger">
+                <div class="item-esquerda">
+                    <span>(−) IAMSPE<sup><a href="#nota5">5</a></sup></span>
+                </div>
+                <span class="item-valor" id="descontoIamspe"></span>
+            </div>
+            
+            <div class="item-resultado fw-bold">
+                <div class="item-esquerda">
+                    <span>(=) Valor líquido sem indenizações</span>
+                </div>
+                <span class="item-valor" id="remuneracaoLiquida"></span>
+            </div>
+            
+            <div class="subsecao fw-bold border-bottom mt-3 mb-2 pb-1">Verbas indenizatórias</div>
+            
+            <div class="item-resultado text-success">
+                <div class="item-esquerda">
+                    <span>(+) Auxílio Refeição</span>
+                    <span class="item-cotas">(R$ 52,68/dia)</span>
+                </div>
+                <span class="item-valor" id="vr"></span>
+            </div>
+            
+            <div class="item-resultado border-bottom mb-2 pb-2 text-success">
+                <div class="item-esquerda">
+                    <span>(+) Nos Conformes</span>
+                    <span class="item-cotas">(300 UFESPs<sup><a href="#nota7">7</a></sup>)</span>
+                </div>
+                <span class="item-valor" id="nc"></span>
+            </div>
+            
+            <div class="item-resultado fs-5 fw-bold text-primary bg-light p-2 rounded">
+                <div class="item-esquerda">
+                    <span>(=) Vencimentos</span>
+                </div>
+                <span class="item-valor" id="vencimentos"></span>
+            </div>
 
-			<div class="alert alert-info mt-3"><strong>Última atualização:</strong> 12/04/2026.</div>
-		
-		<subsection section class="col-lg-12 py-3 px-4">
-			<div class="secao">Notas</div>
-			<div id="nota1" class="item-resultado"><sup>1</sup>Valores retirados da <a href="https://www.imprensaoficial.com.br/DO/BuscaDO2001Documento_11_4.aspx?link=/2010/executivo%2520secao%2520i/abril/09/pag_0021_4G2DQE6D32FIAe1QPVDLL5CRH56.pdf&pagina=21&data=09/04/2010&caderno=Executivo%20I&paginaordenacao=100021">Resolução SF Nº 33 de 08/04/2010</a></div>
-			<div id="nota2" class="item-resultado"><sup>2</sup>Participação nos resultados foi linearizada para o pagamento em 3 meses respeitando o teto</div>
-			<div id="nota3" class="item-resultado"><sup>3</sup>No caso do Valor do teto pelo subsídio do ministro do STF, não foi considerada alteração no valor máximo da cota, que coninua 1/12.000 do salário do governador</div>
-			<div id="nota4" class="item-resultado"><sup>4</sup>Valor obtido a partir da <a href="https://portal.fazenda.sp.gov.br/servicos/folha/Paginas/Contribuicao_Previdenciaria_Servidores_Ativos.aspx">tabela progressiva do RPPS do Estado de São Paulo</a> limitado ao teto do RGPS (R$ 8.475,55)</div>
-			<div id="nota5" class="item-resultado"><sup>5</sup>Soma das aliquotas de todos os participantes aplicadas sobre o rendimento bruto (limitado ao teto)</div>
-			<div id="nota6" class="item-resultado"><sup>6</sup>Valor da cota em 2026: R$ 3,0253</div>
-			<div id="nota7" class="item-resultado"><sup>7</sup>valor da UFESP em 2026: R$ 38,42</div>
-		</subsection>
-		<subsection>
-			<!--LC 1199 2013 (at LC 1352 2019)  https://www.al.sp.gov.br/repositorio/legislacao/lei.complementar/2013/lei.complementar-1199-22.05.2013.html -->
-			<!--LC 1059 2008 (at LC 1361 2021)  https://www.al.sp.gov.br/repositorio/legislacao/lei.complementar/2008/lei.complementar-1059-18.09.2008.html -->
-			<!--Hierarquia sefaz https://www.fazenda.sp.gov.br/ua/hierarquia3.asp?ua1=0012187 -->
-			<!--Postos https://legislacao.fazenda.sp.gov.br/Paginas/pcat1412011.aspx#shareContainer -->
-			<!-- -->
-		</subsection>	
-	</section>
-	</main>
-	<footer id="contato" class="titulo col-lg-12 bg-primary">
-		Caso tenha algum problema, <a style = "color:white" href = 
-		"mailto:guifeuloa@gmail.com?subject=Calculadora de Remuneração - SEFAZ-SP">
-		entre em contato</a>.
-		<br>
-		Autor: Guilher Feulo<br>
-		Créditos e agradecimentos: Lucas Cavalini (https://github.com/LCavalini), Gabriel Bresssane
+            <div class="alert alert-info mt-4"><strong>Última atualização:</strong> 16/04/2026.</div>
+        </section>
+        
+        <section class="col-lg-12 py-3 px-4 border-top mt-4">
+            <div class="secao fs-5 fw-bold text-secondary mb-3">Notas</div>
+            <div id="nota1" class="small mb-1 text-muted"><sup>1</sup> Valores retirados da <a href="https://www.imprensaoficial.com.br/DO/BuscaDO2001Documento_11_4.aspx?link=/2010/executivo%2520secao%2520i/abril/09/pag_0021_4G2DQE6D32FIAe1QPVDLL5CRH56.pdf&pagina=21&data=09/04/2010&caderno=Executivo%20I&paginaordenacao=100021" class="text-decoration-none">Resolução SF Nº 33 de 08/04/2010</a></div>
+            <div id="nota2" class="small mb-1 text-muted"><sup>2</sup> Participação nos resultados foi linearizada para o pagamento em 3 meses respeitando o teto</div>
+            <div id="nota3" class="small mb-1 text-muted"><sup>3</sup> No caso do Valor do teto pelo subsídio do ministro do STF, não foi considerada alteração no valor máximo da cota, que coninua 1/12.000 do salário do governador</div>
+            <div id="nota4" class="small mb-1 text-muted"><sup>4</sup> Valor obtido a partir da <a href="https://portal.fazenda.sp.gov.br/servicos/folha/Paginas/Contribuicao_Previdenciaria_Servidores_Ativos.aspx" class="text-decoration-none">tabela progressiva do RPPS do Estado de São Paulo</a> limitado ao teto do RGPS (R$ 8.475,55)</div>
+            <div id="nota5" class="small mb-1 text-muted"><sup>5</sup> Soma das aliquotas de todos os participantes aplicadas sobre o rendimento bruto (limitado ao teto)</div>
+            <div id="nota6" class="small mb-1 text-muted"><sup>6</sup> Valor da cota em 2026: R$ 3,0253</div>
+            <div id="nota7" class="small mb-1 text-muted"><sup>7</sup> Valor da UFESP em 2026: R$ 38,42</div>
+		</section>
+    </main>
+    
+	<footer id="contato" class="col-lg-12 bg-primary text-center text-white py-4 mt-5 border-top border-4 border-warning shadow-lg">
+		<div class="fs-5 fw-bold mb-3">
+			<i class="bi bi-envelope-fill me-2"></i> Dúvidas ou encontrou algum problema? <br>
+			<a class="text-warning text-decoration-none border-bottom border-warning pb-1" href="mailto:guifeuloa@gmail.com?subject=Calculadora de Remuneração - SEFAZ-SP">Entre em contato comigo</a>
+		</div>
+		<div class="small mt-3 opacity-75">
+			<strong>Autor:</strong> Guilher Feulo<br>
+			<strong>Créditos e agradecimentos:</strong> <a href="https://github.com/LCavalini" target="_blank" class="text-white text-decoration-underline">Lucas Cavalini</a> e Gabriel Bresssane
+		</div>
 	</footer>
     <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/popper.js@1.12.9/dist/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
