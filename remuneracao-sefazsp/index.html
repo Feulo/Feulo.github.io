@@ -36,67 +36,73 @@
                     </select>
                 </div>
                 
-				<div class="form-group mb-2">
-					<label for="funcao" class="form-label mb-1">Função: </label>
-					<select id="funcao" class="form-select">
-						
-						<optgroup label="Assistente Fiscal">
-							<option value="31">Assistente Fiscal I</option>
-							<option value="29">Assistente Fiscal II</option>
-							<option value="25">Assistente Fiscal III</option>
-							<option value="16">Assistente Fiscal IV</option>
-							<option value="13">Assistente Fiscal V</option>
-							<option value="18">Assistente Fiscal Chefe I</option>
-							<option value="12">Assistente Fiscal Chefe II</option>
-							<option value="32">Assistente Fiscal - Função Básica</option>
-						</optgroup>
+				<select id="funcao" class="form-select">
+					<optgroup label="Fiscalização Direta (Sem Função)">
+						<option value="39" selected>Fiscalização Direta de Tributos (Função Básica)</option>
+					</optgroup>
 
-						<optgroup label="Assessor Fiscal">
-							<option value="24">Assessor Fiscal I</option>
-							<option value="15">Assessor Fiscal II</option>
-							<option value="7">Assessor Fiscal III</option>
-							<option value="2">Assessor Fiscal IV</option>
-							<option value="33">Assessor Fiscal - Função Básica</option>
-						</optgroup>
+					<optgroup label="Direção e Chefia">
+						<option value="1">Subsecretário da Receita Estadual</option>
+						<option value="3">Subsecretário Adjunto da Receita Estadual</option>
+						<option value="5">Diretor Geral</option>
+						<option value="7">Diretor Geral Adjunto</option>
+						<option value="10">Diretor</option>
+						<option value="16">Diretor Adjunto</option>
+						<option value="19">Delegado Tributário</option>
+						<option value="30">Chefe</option>
+					</optgroup>
 
-						<optgroup label="Consultor Tributário">
-							<option value="23">Consultor Tributário</option>
-							<option value="21">Consultor Tributário Chefe</option>
-							<option value="14">Consultor Tributário Chefe - COTEPE</option>
-							<option value="34">Consultor Tributário - Função Básica</option>
-						</optgroup>
+					<optgroup label="Assessoria">
+						<option value="2">Assessor Fiscal Setorial VII</option>
+						<option value="6">Assessor Fiscal Setorial VI</option>
+						<option value="8">Assessor Fiscal Setorial V</option>
+						<option value="11">Assessor Fiscal Setorial IV</option>
+						<option value="17">Assessor Fiscal Setorial III</option>
+						<option value="26">Assessor Fiscal Setorial II</option>
+						<option value="29">Assessor Fiscal Setorial I</option>
+					</optgroup>
 
-						<optgroup label="Cargos de Coordenação e Direção">
-							<option value="1">Coordenador da Administração Tributária</option>
-							<option value="3">Coordenador Adjunto da Administração Tributária</option>
-							<option value="4">Coordenador Adjunto Assuntos Administrativos</option>
-							<option value="6">Diretor</option>
-							<option value="8">Diretor Adjunto</option>
-							<option value="28">Chefe</option>
-						</optgroup>
+					<optgroup label="Assistência">
+						<option value="13">Assistente Fiscal Técnico Chefe</option>
+						<option value="14">Assistente Fiscal de Gabinete do Secretário</option>
+						<option value="22">Assistente Fiscal Técnico</option>
+						<option value="23">Assistente Fiscal Chefe</option>
+						<option value="31">Assistente Fiscal Especialista</option>
+						<option value="34">Assistente Fiscal</option>
+					</optgroup>
 
-						<optgroup label="Cargos de Delegação e Representação">
-							<option value="9">Delegado Regional Tributário</option>
-							<option value="10">Delegado Tributário de Julgamento</option>
-							<option value="27">Representante Fiscal</option>
-							<option value="11">Representante Fiscal Chefe</option>
-							<option value="19">Representante Fiscal Chefe de Assistência</option>
-							<option value="36">Representante Fiscal - Função Básica</option>
-						</optgroup>
+					<optgroup label="Consultoria">
+						<option value="24">Consultor Tributário Chefe</option>
+						<option value="32">Consultor Tributário Especialista</option>
+						<option value="35">Consultor Tributário</option>
+					</optgroup>
 
-						<optgroup label="Julgamento e Fiscalização">
-							<option value="37" selected>Fiscalização Direta de Tributos</option>
-							<option value="20">Supervisor de Fiscalização</option>
-							<option value="22">Inspetor Fiscal</option>
-							<option value="17">Corregedor Fiscal</option>
-							<option value="30">Julgador Fiscal</option>
-							<option value="35">Julgador Fiscal - Função Básica</option>
-							<option value="26">Juiz com Dedicação Exclusiva</option>
-							<option value="5">Presidente e Vice-Presidente do TIT</option>
-						</optgroup>
+					<optgroup label="Corregedoria">
+						<option value="4">Corregedor-Geral da Corfisp</option>
+						<option value="9">Corregedor Adjunto da Corfisp</option>
+						<option value="15">Corregedor Fiscal</option>
+					</optgroup>
 
-					</select>
-				</div>
+					<optgroup label="Fiscalização (Chefia)">
+						<option value="25">Supervisor Fiscal</option>
+						<option value="28">Inspetor Fiscal</option>
+					</optgroup>
+
+					<optgroup label="Julgamento">
+						<option value="12">Presidente do TIT</option>
+						<option value="18">Vice-Presidente do TIT</option>
+						<option value="20">Delegado Tributário de Julgamento</option>
+						<option value="37">Juiz com Dedicação Exclusiva</option>
+						<option value="38">Julgador Fiscal</option>
+					</optgroup>
+
+					<optgroup label="Representação">
+						<option value="21">Representante Fiscal Chefe</option>
+						<option value="27">Representante Fiscal Chefe de Assistência</option>
+						<option value="33">Representante Fiscal Especialista</option>
+						<option value="36">Representante Fiscal</option>
+					</optgroup>
+				</select>
                 
                 <div class="form-group mb-2">
                     <label for="participacaoResultados" class="form-label mb-1">Participação nos Resultados: </label>
