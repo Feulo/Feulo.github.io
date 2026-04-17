@@ -4,7 +4,9 @@ const VALOR_REFEICAO = 52.68;
 const TETO_SP = 36301.53;
 const TETO_STF = 46366.19;
 const TETO_INSS = 8475.55;
+const COTA_SP = TETO_SP / 12000;
 const VALOR_NOS_CONFORMES = 300 * VALOR_UFESP; 
+const VALOR_AT = 6000*0.285*COTA_SP
 const SALARIO_MINIMO = 1621.00;
 
 const VB_COTAS = [4300, 4550, 4800, 5200, 5600, 6000];
@@ -162,10 +164,10 @@ function calcSallary() {
         VALOR_COTA = TETO_STF / 12000;
         teto = TETO_STF;
     } else if (tipoTeto === "stf") {
-        VALOR_COTA = TETO_SP / 12000;
+        VALOR_COTA = COTA_SP;
         teto = TETO_STF;
     } else {
-        VALOR_COTA = TETO_SP / 12000;
+        VALOR_COTA = COTA_SP;
         teto = TETO_SP;
     }
     
@@ -219,8 +221,16 @@ function calcSallary() {
     let remuneracaoLiquida = baseParaPrevidencia - valorPrevidenciaSocial - previdenciaComplementarValor - irrf - totalDescontoIamspe;
 
     let vr = diasAlimentacao * VALOR_REFEICAO;
-    let nc = atin * VALOR_NOS_CONFORMES;
-    let vencimentos = remuneracaoLiquida + vr + nc;
+    
+    // Nova lógica do Auxílio Transporte
+    let auxilio_transporte;
+    if (atin === 1) {
+        auxilio_transporte = VALOR_NOS_CONFORMES;
+    } else {
+        auxilio_transporte = VALOR_AT;
+    }
+    
+    let vencimentos = remuneracaoLiquida + vr + auxilio_transporte;
     
     // Atualização da Tela
     document.getElementById("vbCotas").innerText = VB_COTAS[cargo - 1];
@@ -253,8 +263,20 @@ function calcSallary() {
     document.getElementById("remuneracaoLiquida").innerHTML = numberToReal(remuneracaoLiquida);
     
     document.getElementById("vr").innerHTML = numberToReal(vr);
-    document.getElementById("nc").innerHTML = numberToReal(nc);
-    document.getElementById("vencimentos").innerHTML = numberToReal(vencimentos);
+    // Atualiza o valor na tela
+    document.getElementById("nc").innerHTML = numberToReal(auxilio_transporte);
+
+    // Atualiza o rótulo do Auxílio Transporte / Nos Conformes
+    const labelAtin = document.getElementById("labelAtin");
+    if (labelAtin) {
+        if (atin === 1) {
+            // Se for Nos Conformes (Sim)
+            labelAtin.innerHTML = `<span>(+) Nos Conformes</span> <span class="item-cotas">(300 UFESPs<sup><a href="#nota7">7</a></sup>)</span>`;
+        } else {
+            // Se for Auxílio Transporte Padrão (Não)
+            labelAtin.innerHTML = `<span>(+) Adicional de Transporte</span> <span class="item-cotas">(1710 cotas<sup><a href="#nota6">6</a></sup>)</span>`;
+        }
+    }    document.getElementById("vencimentos").innerHTML = numberToReal(vencimentos);
 
 // 1. Atualiza o texto descritivo e usa os badges nativos do Bootstrap (bg-primary / bg-success)
     const labelPrevidencia = document.getElementById("labelPrevidencia");
