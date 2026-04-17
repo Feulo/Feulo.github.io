@@ -6,7 +6,6 @@ const TETO_STF = 46366.19;
 const TETO_INSS = 8475.55;
 const COTA_SP = TETO_SP / 12000;
 const VALOR_NOS_CONFORMES = 300 * VALOR_UFESP; 
-const VALOR_AT = 6000*0.285*COTA_SP
 const SALARIO_MINIMO = 1621.00;
 
 const VB_COTAS = [4300, 4550, 4800, 5200, 5600, 6000];
@@ -223,6 +222,8 @@ function calcSallary() {
     let vr = diasAlimentacao * VALOR_REFEICAO;
     
     // Nova lógica do Auxílio Transporte
+    let VALOR_AT = 6000*0.285*VALOR_COTA
+
     let auxilio_transporte;
     if (atin === 1) {
         auxilio_transporte = VALOR_NOS_CONFORMES;
