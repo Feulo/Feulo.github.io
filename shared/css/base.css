@@ -63,3 +63,28 @@ div .form-section {
     background-color: lightgrey;
 }
 
+
+.badge-regime {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 0.7em;
+    font-weight: bold;
+    margin-right: 5px;
+    text-transform: uppercase;
+    vertical-align: middle;
+}
+
+/* Azul para o Estado (RPPS) */
+.badge-rpps {
+    background-color: #e0f2fe;
+    color: #0369a1;
+    border: 1px solid #bae6fd;
+}
+
+/* Verde para o INSS (RGPS) */
+.badge-rgps {
+    background-color: #dcfce7;
+    color: #15803d;
+    border: 1px solid #bbf7d0;
+}

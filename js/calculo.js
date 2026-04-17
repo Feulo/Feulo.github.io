@@ -4,8 +4,8 @@ const VALOR_REFEICAO = 52.68;
 const TETO_SP = 36301.53;
 const TETO_STF = 46366.19;
 const TETO_INSS = 8475.55;
-const TETO_RPPS = 1086.87;
 const VALOR_NOS_CONFORMES = 300 * VALOR_UFESP; 
+const SALARIO_MINIMO = 1621.00;
 
 const VB_COTAS = [4300, 4550, 4800, 5200, 5600, 6000];
 
@@ -72,8 +72,66 @@ const FUNCOES = [
     { id: 57, pl: 1680, pp: 3300, pr: [3279, 3381, 3484, 3587, 3689, 3792] }  // Assistente Fiscal I
 ];
 
+// Faixas RPPS SP (LC 1.354/2020)
+const FAIXAS_RPPS = [
+    { limite: SALARIO_MINIMO, aliquota: 0.11 },
+    { limite: 4174.58, aliquota: 0.12 },
+    { limite: TETO_INSS, aliquota: 0.14 },
+    { limite: Infinity, aliquota: 0.16 }
+];
+
+// Faixas RGPS (INSS Padrão)
+const FAIXAS_RGPS = [
+    { limite: SALARIO_MINIMO, aliquota: 0.075 },
+    { limite: 2902.84, aliquota: 0.09 },
+    { limite: 4354.27, aliquota: 0.12 },
+    { limite: TETO_INSS, aliquota: 0.14 } 
+];
+
 function numberToReal(numero) {
     return numero.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+}
+
+function calcularFaixasProgressivas(valorBase, faixas) {
+    let total = 0;
+    for (let i = 0; i < faixas.length; i++) {
+        const { limite, aliquota } = faixas[i];
+        const limiteAnterior = i === 0 ? 0 : faixas[i - 1].limite;
+        
+        if (valorBase > limiteAnterior) {
+            const baseCalculo = Math.min(valorBase, limite) - limiteAnterior;
+            total += baseCalculo * aliquota;
+        } else {
+            break;
+        }
+    }
+    return total;
+}
+
+function calcularIRRF(baseIRRF) {
+    if (baseIRRF <= 2428.80) {
+        return 0;
+    }
+
+    let aliquota = 0;
+    let parcelaDeduzir = 0;
+
+    if (baseIRRF <= 2826.65) {
+        aliquota = 0.075;
+        parcelaDeduzir = 182.16;
+    } else if (baseIRRF <= 3751.05) {
+        aliquota = 0.15;
+        parcelaDeduzir = 394.16;
+    } else if (baseIRRF <= 4664.68) {
+        aliquota = 0.225;
+        parcelaDeduzir = 675.49;
+    } else {
+        aliquota = 0.275;
+        parcelaDeduzir = 908.73; 
+    }
+
+    const imposto = (baseIRRF * aliquota) - parcelaDeduzir;
+    return imposto > 0 ? imposto : 0;
 }
 
 function calcSallary() {
@@ -82,6 +140,7 @@ function calcSallary() {
     let diasAlimentacao = Number(document.getElementById("diasAlimentacao").value);
     let icm = Number(document.getElementById("icm").value) / 100;
     let participacao = Number(document.getElementById("participacaoResultados").value);
+    let regimePrevidenciario = document.getElementById("regimePrevidenciario").value;
     let previdenciaComplementar = Number(document.getElementById("previdenciaComplementar").value) / 100;
     let atin = Number(document.getElementById("atin").value);
     let tipoTeto = document.getElementById("tipoTeto").value;
@@ -91,6 +150,10 @@ function calcSallary() {
     let dependentesIamspeIdadeInferior = Number(document.getElementById("dependentesIamspeIdadeInferior").value);
     let dependentesIamspeIdadeSuperior = Number(document.getElementById("dependentesIamspeIdadeSuperior").value);
     let tempoServico = Number(document.getElementById("tempoServico").value);
+    
+    // Captura dependentes IRRF (Se o campo não existir, assume 0)
+    let dependentesIRRFElem = document.getElementById("dependentesIRRF");
+    let dependentesIRRF = dependentesIRRFElem ? Number(dependentesIRRFElem.value) : 0;
     
     let VALOR_COTA;
     let teto; 
@@ -124,19 +187,37 @@ function calcSallary() {
     let valorBruto = vb + pp + pl + sextaParte + qq + pr;
     
     // Deduções
+    // 1. Abate-Teto (Constitucional)
     let deducaoTeto = valorBruto > teto ? (valorBruto - teto) : 0;
-    let rpps = TETO_RPPS;
-    let previdenciaComplementarValor = (valorBruto - deducaoTeto - TETO_INSS) * previdenciaComplementar;
-    
-    let irrf = (valorBruto - deducaoTeto - rpps) * 0.275 - 908.73;
-    if (irrf < 0) irrf = 0;
-    
+    let baseParaPrevidencia = valorBruto - deducaoTeto;
+
+    // 2. Cálculo da Previdência conforme o Regime
+    let valorPrevidenciaSocial = 0;
+
+    if (regimePrevidenciario === 'RPPS') {
+        valorPrevidenciaSocial = calcularFaixasProgressivas(baseParaPrevidencia, FAIXAS_RPPS);
+    } else {
+        valorPrevidenciaSocial = calcularFaixasProgressivas(baseParaPrevidencia, FAIXAS_RGPS);
+    }
+
+    // 3. Previdência Complementar (SP-PREVCOM ou similar)
+    let basePrevidenciaComplementar = Math.max(0, baseParaPrevidencia - TETO_INSS);
+    let previdenciaComplementarValor = basePrevidenciaComplementar * previdenciaComplementar;
+
+    // 4. IRRF (Imposto de Renda)
+    // A base de cálculo do IRRF deduz a previdência oficial, a complementar e o valor por dependente
+    let baseIRRF = baseParaPrevidencia - valorPrevidenciaSocial - previdenciaComplementarValor - (dependentesIRRF * 189.59);
+    let irrf = calcularIRRF(baseIRRF); 
+
+    // 5. IAMSPE
     let descontoIamspeAgregados = agregadosIamspeIdadeInferior * 0.02 + agregadosIamspeIdadeSuperior * 0.03;
     let descontoIamspeDependentes = dependentesIamspeIdadeInferior * 0.005 + dependentesIamspeIdadeSuperior * 0.01;
-    let totalDescontoIamspe = (iamspe + descontoIamspeAgregados + descontoIamspeDependentes) * (valorBruto - deducaoTeto);    
-    
-    let remuneracaoLiquida = valorBruto - deducaoTeto - rpps - previdenciaComplementarValor - irrf - totalDescontoIamspe;          
-    
+    let aliquotaTotalIamspe = iamspe + descontoIamspeAgregados + descontoIamspeDependentes;
+    let totalDescontoIamspe = aliquotaTotalIamspe * baseParaPrevidencia;
+
+    // 6. Totais Finais
+    let remuneracaoLiquida = baseParaPrevidencia - valorPrevidenciaSocial - previdenciaComplementarValor - irrf - totalDescontoIamspe;
+
     let vr = diasAlimentacao * VALOR_REFEICAO;
     let nc = atin * VALOR_NOS_CONFORMES;
     let vencimentos = remuneracaoLiquida + vr + nc;
@@ -163,7 +244,9 @@ function calcSallary() {
     
     document.getElementById("valorTeto").innerText = numberToReal(teto);
     document.getElementById("deducaoTeto").innerText = numberToReal(deducaoTeto);
-    document.getElementById("rpps").innerText = numberToReal(rpps);
+    
+    // Atualizado de 'rpps' para 'valorPrevidenciaSocial'
+    // document.getElementById("rpps").innerText = regimePrevidenciario + ": " + numberToReal(valorPrevidenciaSocial);
     document.getElementById("spprev").innerText = numberToReal(previdenciaComplementarValor);
     document.getElementById("descontoIamspe").innerText = numberToReal(totalDescontoIamspe);
     document.getElementById("irrf").innerText = numberToReal(irrf);
@@ -172,4 +255,20 @@ function calcSallary() {
     document.getElementById("vr").innerHTML = numberToReal(vr);
     document.getElementById("nc").innerHTML = numberToReal(nc);
     document.getElementById("vencimentos").innerHTML = numberToReal(vencimentos);
+
+// 1. Atualiza o texto descritivo e usa os badges nativos do Bootstrap (bg-primary / bg-success)
+    const labelPrevidencia = document.getElementById("labelPrevidencia");
+    if (labelPrevidencia) {
+        if (regimePrevidenciario === 'RPPS') {
+            labelPrevidencia.innerHTML = `(−) Regime Previdenciário <span class="badge bg-primary ms-1 fw-normal">RPPS</span><sup><a href="#nota4">4</a></sup>`;
+        } else {
+            labelPrevidencia.innerHTML = `(−) Regime Previdenciário <span class="badge bg-success ms-1 fw-normal">RGPS</span><sup><a href="#nota4">4</a></sup>`;
+        }
+    }
+
+    // 2. O campo de valor volta a receber APENAS o dinheiro, mantendo o alinhamento perfeito à direita!
+    document.getElementById("rpps").innerText = numberToReal(valorPrevidenciaSocial);
+
+    // 4. Injeta tudo no span de valor (usando innerHTML para o badge funcionar)
+    document.getElementById("rpps").innerHTML = `${badgeHTML} ${numberToReal(valorPrevidenciaSocial)}`;
 }

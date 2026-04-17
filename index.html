@@ -178,6 +178,14 @@
                 </div>
                 
                 <div class="form-group mb-2">
+                    <label for="regimePrevidenciario" class="form-label mb-1">Regime Previdenciário</label>
+                    <select id="regimePrevidenciario" class="form-select">
+                        <option value="RGPS">RGPS</option>
+                        <option value="RPPS">RPPS</option>
+                    </select>
+                </div>
+
+                <div class="form-group mb-2">
                     <label for="previdenciaComplementar" class="form-label mb-1">Previdência Complementar (em %): </label>
                     <input type="number" id="previdenciaComplementar" class="form-control" step="0.5" min="0" max="10" value="7.5">
                 </div>
@@ -308,7 +316,7 @@
             
             <div class="item-resultado text-danger">
                 <div class="item-esquerda">
-                    <span>(−) Dedução teto<sup><a href="#nota3">3</a></sup></span>
+                    <span>(−) Dedução Teto<sup><a href="#nota3">3</a></sup></span>
                     <span class="item-cotas">(<span id="valorTeto"></span>)</span>
                 </div>
                 <span class="item-valor" id="deducaoTeto"></span>
@@ -316,7 +324,7 @@
             
             <div class="item-resultado text-danger">
                 <div class="item-esquerda">
-                    <span>(−) Regime Próprio Previdenciário<sup><a href="#nota4">4</a></sup></span>
+                    <span id="labelPrevidencia">(−) Regime Próprio Previdenciário<sup><a href="#nota4">4</a></sup></span>
                 </div>
                 <span class="item-valor" id="rpps"></span>
             </div>
