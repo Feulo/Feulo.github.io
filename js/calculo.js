@@ -80,6 +80,7 @@ function calcSallary() {
     let cargo = Number(document.getElementById("cargo").value);
     let funcaoId = Number(document.getElementById("funcao").value);
     let diasAlimentacao = Number(document.getElementById("diasAlimentacao").value);
+    let icm = Number(document.getElementById("icm").value) / 100;
     let participacao = Number(document.getElementById("participacaoResultados").value);
     let previdenciaComplementar = Number(document.getElementById("previdenciaComplementar").value) / 100;
     let atin = Number(document.getElementById("atin").value);
@@ -112,7 +113,7 @@ function calcSallary() {
     let vb = VB_COTAS[cargo - 1] * VALOR_COTA;
     let pl = funcaoObj.pl * VALOR_COTA;
     let pp = funcaoObj.pp * VALOR_COTA;
-    let pr = participacao * funcaoObj.pr[cargo - 1] * VALOR_COTA;
+    let pr = participacao * funcaoObj.pr[cargo - 1] * icm * VALOR_COTA;
     
     let aliquotaQq = Math.floor(tempoServico / 5) * 0.05; 
     let qq = (vb + pl + pp) * aliquotaQq;
