@@ -50,7 +50,7 @@ const FUNCOES = [
     { id: 36, pl: 1680, pp: 3300, pr: [3403, 3510, 3616, 3723, 3829, 3936] }, // Representante Fiscal
     { id: 37, pl: 1680, pp: 3300, pr: [3403, 3510, 3616, 3723, 3829, 3936] }, // Juiz com Dedicação Exclusiva
     { id: 38, pl: 1680, pp: 3300, pr: [3403, 3510, 3616, 3723, 3829, 3936] }, // Julgador Fiscal
-    { id: 39, pl: 0, pp: 2700, pr: [2150, 2280, 2410, 2540, 2670, 2800] }, // Fiscalização Direta de Tributos (Externo)
+    { id: 39, pl: 0, pp: 2700, pr: [3279, 3381, 3484, 3587, 3689, 3792]}, // Fiscalização Direta de Tributos (Externo)
     
     // Novas Funções (Complementares das Tabelas de PR)
     { id: 40, pl: 2400, pp: 3600, pr: [0, 4280, 4410, 4540, 4670, 4800] }, // Coordenador da Administração Tributária
