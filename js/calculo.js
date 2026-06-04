@@ -1,6 +1,6 @@
 // Valores atualizados até 04/2026.
 const VALOR_UFESP = 38.42;
-const VALOR_REFEICAO = 52.68;
+const VALOR_REFEICAO = 55;
 const TETO_SP = 36301.53;
 const TETO_STF = 46366.19;
 const TETO_INSS = 8475.55;
