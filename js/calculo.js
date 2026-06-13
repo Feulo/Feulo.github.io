@@ -227,8 +227,10 @@ function calcSallary() {
     let auxilio_transporte;
     if (atin === 1) {
         auxilio_transporte = VALOR_NOS_CONFORMES;
-    } else {
+    } else if (atin === 0 && funcaoObj && funcaoObj.id === 39){
         auxilio_transporte = VALOR_AT;
+    } else {
+        auxilio_transporte = 0;  
     }
     
     let vencimentos = remuneracaoLiquida + vr + auxilio_transporte;
