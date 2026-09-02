@@ -183,7 +183,7 @@ function calcSallary() {
     let qq = (vb + pl + pp) * aliquotaQq;
     
     let aliquota6p = Math.floor(tempoServico / 20) * 0.1666;
-    let sextaParte = (vb + pl + pp) * aliquota6p;
+    let sextaParte = (vb + pl + pp + qq) * aliquota6p;
     
     let valorBruto = vb + pp + pl + sextaParte + qq + pr;
     
