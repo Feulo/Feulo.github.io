@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Calculadora de verbas retroativas — SEFAZ/SP</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <link href="./css/base.css" rel="stylesheet">
+    <link href="./css/retroativos.css" rel="stylesheet">
+    <script src="./js/site-config.js"></script>
+    <script src="./js/acesso.js"></script>
+</head>
+<body>
+    <header class="bg-primary p-3">
+        <div class="titulo text-white text-center fs-4 fw-bold">Calculadora de verbas retroativas — SEFAZ/SP</div>
+        <nav class="text-center mt-2" aria-label="Calculadoras">
+            <a class="text-white text-decoration-none" href="./remuneracao.html">Remuneração mensal</a>
+            <span class="text-white-50 mx-3">|</span>
+            <span class="text-warning" aria-current="page">Verbas retroativas</span>
+        </nav>
+    </header>
+
+    <main class="container py-4">
+        <div class="alert alert-light border mb-4">
+            Este assistente recalcula valores <strong>brutos e líquidos</strong>, mês a mês, com as tabelas históricas de previdência e IRRF. Não inclui correção monetária ou juros.
+        </div>
+
+        <ol class="wizard-progress" id="wizardProgress" aria-label="Progresso do cálculo">
+            <li class="active">Período</li>
+            <li>Remuneração</li>
+            <li>Verbas faltantes</li>
+            <li>Conferência</li>
+            <li>Decisão judicial</li>
+            <li>Resultado</li>
+        </ol>
+
+        <div id="mensagemErro" class="alert alert-danger d-none" role="alert" tabindex="-1"></div>
+
+        <section class="wizard-step" data-step="1">
+            <p class="step-kicker">Etapa 1 de 6</p>
+            <h1>Qual período precisa ser recalculado?</h1>
+            <p class="text-muted">Comece por um caso padrão da turma 2026 ou preencha um período personalizado. O ATIN (Nos Conformes) é líquido, extra teto e só devido no mês seguinte ao ingresso.</p>
+            <fieldset class="mb-4">
+                <legend class="h5">Caso padrão</legend>
+                <div class="case-grid" id="casosPadrao" role="radiogroup" aria-label="Caso padrão">
+                    <label class="case-card">
+                        <input type="radio" name="casoPadrao" value="turma-2026-ti" checked>
+                        <strong>Turma 2026 — TI</strong>
+                        <span>AFR I, função Assistente Fiscal. Ingresso em 14/08/2026. Agosto recebeu só o vencimento básico proporcional. Em setembro recebe VB + ATIN líquido; faltam PP e pró-labore.</span>
+                    </label>
+                    <label class="case-card">
+                        <input type="radio" name="casoPadrao" value="turma-2026-gt">
+                        <strong>Turma 2026 — GT</strong>
+                        <span>Ingresso em 14/08/2026. Agosto recebeu só o vencimento básico proporcional. Em setembro a folha sai correta.</span>
+                    </label>
+                    <label class="case-card">
+                        <input type="radio" name="casoPadrao" value="personalizado">
+                        <strong>Caso personalizado</strong>
+                        <span>Informe as datas e as rubricas manualmente.</span>
+                    </label>
+                </div>
+                <div id="descricaoCasoPadrao" class="form-text mt-2">
+                    Escolher TI ou GT preenche período, função, o que já foi pago e o que ficou faltando.
+                </div>
+            </fieldset>
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label" for="dataInicio">Em qual dia começou o período?</label>
+                    <input class="form-control form-control-lg" id="dataInicio" type="date" value="2023-01-01" required>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label" for="dataFim">Em qual dia terminou o período?</label>
+                    <input class="form-control form-control-lg" id="dataFim" type="date" value="2026-09-23" required>
+                </div>
+            </div>
+            <div id="resumoParcial" class="form-text mt-3">Meses incompletos serão identificados ao continuar.</div>
+        </section>
+
+        <section class="wizard-step d-none" data-step="2">
+            <p class="step-kicker">Etapa 2 de 6</p>
+            <h1>O que você recebia normalmente?</h1>
+            <p class="text-muted">Essas informações permitem calcular cada rubrica em cotas e descobrir quanto do teto já estava ocupado.</p>
+            <div id="resumoRubricasCaso" class="alert alert-info d-none"></div>
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label" for="cargoRetro">Cargo e nível</label>
+                    <select class="form-select" id="cargoRetro">
+                        <option value="1">Auditor Fiscal da Receita Estadual I</option>
+                        <option value="2">Auditor Fiscal da Receita Estadual II</option>
+                        <option value="3">Auditor Fiscal da Receita Estadual III</option>
+                        <option value="4">Auditor Fiscal da Receita Estadual IV</option>
+                        <option value="5">Auditor Fiscal da Receita Estadual V</option>
+                        <option value="6">Auditor Fiscal da Receita Estadual VI</option>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label" for="funcaoRetro">Função</label>
+                    <select class="form-select" id="funcaoRetro"></select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label" for="tempoServicoRetro">Anos completos de serviço no início do período</label>
+                    <input class="form-control" id="tempoServicoRetro" type="number" min="0" max="50" value="0">
+                    <div class="form-text">O tempo será acrescido automaticamente a cada aniversário anual do período.</div>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label" for="icmRetro">Índice de cumprimento de metas — ICM (%)</label>
+                    <input class="form-control" id="icmRetro" type="number" min="0" max="100" step="0.01" value="94.5">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label" for="regimeRetro">Contribuição previdenciária</label>
+                    <select class="form-select" id="regimeRetro">
+                        <option value="teto-rgps" selected>A partir de 2019 — limitada ao teto do RGPS</option>
+                        <option value="RPPS">Até 2019 — RPPS sobre a remuneração</option>
+                    </select>
+                    <div class="form-text">Quem entrou a partir de 2019 segue no regime próprio. A contribuição oficial usa a tabela progressiva e para no teto do RGPS do mês, para a correção não incidir acima desse teto.</div>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label" for="dependentesIRRetro">Dependentes para IRRF</label>
+                    <input class="form-control" id="dependentesIRRetro" type="number" min="0" max="30" value="0">
+                </div>
+            </div>
+            <fieldset class="mt-4">
+                <legend class="h5">Outros descontos</legend>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" id="complementarAtiva" type="checkbox">
+                            <label class="form-check-label fw-semibold" for="complementarAtiva">Previdência complementar</label>
+                        </div>
+                        <label class="form-label small mt-2" for="percentualComplementar">Percentual (%)</label>
+                        <input class="form-control" id="percentualComplementar" type="number" min="0" max="100" step="0.01" value="7.5" disabled>
+                        <div class="form-text">O percentual incide só sobre o que excede o teto do RGPS do mês.</div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" id="iamspeAtivo" type="checkbox">
+                            <label class="form-check-label fw-semibold" for="iamspeAtivo">IAMSPE</label>
+                        </div>
+                        <label class="form-label small mt-2" for="percentualIamspe">Percentual total (%)</label>
+                        <input class="form-control" id="percentualIamspe" type="number" min="0" max="100" step="0.01" value="2" disabled>
+                        <div class="form-text">Informe a soma das alíquotas do titular, dependentes e agregados.</div>
+                    </div>
+                </div>
+            </fieldset>
+            <fieldset class="mt-4">
+                <legend class="h5">Quais rubricas já foram recebidas?</legend>
+                <p class="text-muted small">Desmarque somente o que não aparecia normalmente na folha.</p>
+                <div id="rubricasRecebidas" class="check-grid"></div>
+            </fieldset>
+        </section>
+
+        <section class="wizard-step d-none" data-step="3">
+            <p class="step-kicker">Etapa 3 de 6</p>
+            <h1>Quais verbas deixaram de ser pagas?</h1>
+            <p class="text-muted">Cada verba pode ter seu próprio intervalo. Os valores de cargo são calculados automaticamente.</p>
+            <div id="verbasDevidas"></div>
+            <button class="btn btn-outline-primary mt-2" id="adicionarPersonalizada" type="button">Adicionar outra verba</button>
+        </section>
+
+        <section class="wizard-step d-none" data-step="4">
+            <p class="step-kicker">Etapa 4 de 6</p>
+            <h1>Confira os valores de cada mês</h1>
+            <p class="text-muted">O bruto sujeito a teto e o teto são sugeridos pelo sistema. O ATIN aparece à parte, como valor líquido extra teto, e não entra no abate.</p>
+            <div class="table-responsive review-table">
+                <table class="table table-sm align-middle">
+                    <thead>
+                        <tr>
+                            <th>Competência</th>
+                            <th>Dias</th>
+                            <th>Bruto sujeito a teto</th>
+                            <th>ATIN líquido extra teto</th>
+                            <th>Teto vigente</th>
+                            <th>Fonte</th>
+                        </tr>
+                    </thead>
+                    <tbody id="corpoConferencia"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="wizard-step d-none" data-step="5">
+            <p class="step-kicker">Etapa 5 de 6</p>
+            <h1>Existe uma decisão judicial para recalcular reflexos?</h1>
+            <p class="text-muted">Ative somente os itens reconhecidos no seu processo ou título executivo.</p>
+            <div class="service-option">
+                <div class="form-check form-switch">
+                    <input class="form-check-input" id="servicoPR" type="checkbox">
+                    <label class="form-check-label fw-semibold" for="servicoPR">Reflexo da PR em 13º salário e férias + 1/3</label>
+                </div>
+                <p class="small text-muted mb-0">Calcula os avos mensais quando houver pelo menos 15 dias trabalhados.</p>
+            </div>
+            <div class="service-option">
+                <div class="form-check form-switch">
+                    <input class="form-check-input" id="servicoQuinquenio" type="checkbox">
+                    <label class="form-check-label fw-semibold" for="servicoQuinquenio">Reflexos do quinquênio em 13º e férias + 1/3</label>
+                </div>
+                <div class="form-check mt-2 ms-4">
+                    <input class="form-check-input" id="incluirQuinquenioPrincipal" type="checkbox">
+                    <label class="form-check-label small" for="incluirQuinquenioPrincipal">Incluir também a diferença mensal principal do quinquênio</label>
+                </div>
+            </div>
+        </section>
+
+        <section class="wizard-step d-none" data-step="6">
+            <p class="step-kicker">Etapa 6 de 6</p>
+            <h1>Resultado do recálculo</h1>
+            <div class="summary-grid" aria-live="polite">
+                <div><span>Total bruto devido</span><strong id="totalBruto">—</strong></div>
+                <div><span>Extras líquidos e extra-teto</span><strong id="totalExtrasLiquidos">—</strong></div>
+                <div><span>Retido pelo abate teto</span><strong class="text-danger" id="totalAbate">—</strong></div>
+                <div><span>Novos descontos</span><strong class="text-danger" id="totalDescontos">—</strong></div>
+                <div class="summary-primary"><span>Total líquido a receber</span><strong id="totalLiquido">—</strong></div>
+                <div><span>Reflexos judiciais incluídos</span><strong id="totalReflexos">—</strong></div>
+            </div>
+            <div class="d-flex flex-wrap gap-2 my-4 no-print">
+                <button class="btn btn-outline-primary" id="exportarCsv" type="button">Baixar planilha CSV</button>
+                <button class="btn btn-outline-secondary" id="imprimirRelatorio" type="button">Salvar ou imprimir PDF</button>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-sm table-striped align-middle" id="tabelaResultado">
+                    <thead>
+                        <tr>
+                            <th>Competência</th>
+                            <th class="text-end">Salário original</th>
+                            <th class="text-end">Retroativo bruto</th>
+                            <th class="text-end">Extras líquidos</th>
+                            <th class="text-end">Salário recalculado</th>
+                            <th class="text-end">Abate teto</th>
+                            <th class="text-end">Novos descontos</th>
+                            <th class="text-end">Líquido retroativo</th>
+                        </tr>
+                    </thead>
+                    <tbody id="corpoResultado"></tbody>
+                </table>
+            </div>
+            <div class="alert alert-warning mt-3 small">
+                Estimativa sem correção monetária ou juros. O líquido representa a diferença entre os descontos históricos recalculados e os descontos estimados da remuneração original. Confirme incidências e critérios da decisão com profissional habilitado.
+                Reflexos de 13º e férias são apresentados como acréscimos na competência; a tributação exclusiva/separada da folha de pagamento não é reproduzida.
+            </div>
+        </section>
+
+        <div class="wizard-actions mt-4 no-print">
+            <button class="btn btn-outline-secondary d-none" id="voltar" type="button">Voltar</button>
+            <button class="btn btn-primary ms-auto" id="avancar" type="button">Continuar</button>
+        </div>
+
+        <section class="sources mt-5">
+            <h2 class="h5">Fontes dos tetos</h2>
+            <p class="small text-muted mb-2">A cota é calculada como teto estadual ÷ 12.000. O valor de R$ 36.301,53 passou a valer em julho de 2025.</p>
+            <ul id="listaFontes" class="small"></ul>
+            <h2 class="h5 mt-4">Fontes dos descontos</h2>
+            <ul id="listaFontesDescontos" class="small"></ul>
+        </section>
+    </main>
+
+    <script src="./js/domain/remuneracaoData.js"></script>
+    <script src="./js/retroativos/calcCore.js"></script>
+    <script src="./js/retroativos/servicosJudiciais.js"></script>
+    <script src="./js/retroativos/descontosHistoricos.js"></script>
+    <script src="./js/retroativos/wizard.js"></script>
+</body>
+</html>

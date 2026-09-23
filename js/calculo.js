@@ -294,6 +294,16 @@ function calcSallary() {
     // 2. O campo de valor volta a receber APENAS o dinheiro, mantendo o alinhamento perfeito à direita!
     document.getElementById("rpps").innerText = numberToReal(valorPrevidenciaSocial);
 
-    // 4. Injeta tudo no span de valor (usando innerHTML para o badge funcionar)
-    document.getElementById("rpps").innerHTML = `${badgeHTML} ${numberToReal(valorPrevidenciaSocial)}`;
 }
+
+document.addEventListener("DOMContentLoaded", () => {
+    const header = document.querySelector("header");
+    if (!header || header.querySelector("nav")) return;
+    const nav = document.createElement("nav");
+    nav.className = "text-center mt-2";
+    nav.innerHTML = `
+        <span class="text-warning">Remuneração</span>
+        <span class="text-white-50 mx-3">|</span>
+        <a class="text-white text-decoration-none" href="./retroativos.html">Retroativos (abate teto)</a>`;
+    header.appendChild(nav);
+});
