@@ -105,7 +105,8 @@
                 sujeitaTeto: rubrica.sujeitaTeto !== false,
                 tributavel: rubrica.tributavel !== false,
                 liquida: rubrica.liquida === true,
-                proporcional: rubrica.proporcional !== false
+                proporcional: rubrica.proporcional !== false,
+                pagamentoMesSeguinte: rubrica.id === "pp" && Number(porId("funcaoRetro").value) === 39
             }
         ]));
     }
@@ -191,16 +192,16 @@
             "2026-08": ["vb"],
             "2026-09": ti ? ["vb", "atin"] : ["vb", "pp", "pl", "atin"]
         };
-        marcarVerbaDevida("pp", "2026-08", ti ? "2026-09" : "2026-08", true);
+        marcarVerbaDevida("pp", "2026-08", "2026-09", ti);
         marcarVerbaDevida("pl", "2026-08", ti ? "2026-09" : "2026-08", ti);
         marcarVerbaDevida("atin", "2026-09", "2026-09", false);
 
         porId("descricaoCasoPadrao").textContent = ti
             ? "TI: AFR I, função Assistente Fiscal. 14/08 a 30/09. Agosto = só VB proporcional. Setembro = VB + ATIN líquido extra teto. Faltam PP e pró-labore."
-            : "GT: AFR I, Fiscalização Direta. 14/08 a 30/09. Agosto = só VB proporcional. Setembro sai correto (VB + PP + ATIN).";
+            : "GT sem função: 14/08 a 30/09. Agosto = só VB proporcional. A produtividade de agosto é paga em setembro, e essa folha sai correta.";
         porId("resumoRubricasCaso").textContent = ti
             ? "Caso TI aplicado com função Assistente Fiscal. Agosto recebeu só VB. Setembro recebeu VB + ATIN líquido. Devidos: PP e pró-labore em ago/set. ATIN só a partir de setembro."
-            : "Caso GT aplicado com Fiscalização Direta. Agosto recebeu só VB. Setembro está completo. Devido: PP proporcional de agosto. ATIN só a partir de setembro.";
+            : "Caso GT aplicado, sem função. Agosto recebeu só VB. A produtividade de agosto entra na folha de setembro, que está correta. ATIN só a partir de setembro.";
         porId("resumoRubricasCaso").classList.remove("d-none");
 
         const uniao = new Set(Object.values(estado.rubricasRecebidasPorCompetencia).flat());
@@ -224,7 +225,7 @@
                 <label class="form-label small" for="${prefixo}-valor">Valor mensal cheio</label>
                 <input class="form-control" id="${prefixo}-valor" type="number" min="0" step="0.01" value="${verba.valor || ""}">
             </div>
-        ` : `<div class="col-md-5"><strong>${escapar(verba.nome)}</strong><div class="form-text">${verba.id === "atin" ? "Líquido, extra teto e devido só no mês seguinte ao ingresso. 300 UFESPs do mês, sem IR nem previdência." : "Valor calculado em cotas."}</div></div>`;
+        ` : `<div class="col-md-5"><strong>${escapar(verba.nome)}</strong><div class="form-text">${verba.id === "atin" ? "Líquido, extra teto e devido só no mês seguinte ao ingresso. 300 UFESPs do mês, sem IR nem previdência." : verba.id === "pp" ? "No GT sem função, a produtividade do mês é paga na competência seguinte." : "Valor calculado em cotas."}</div></div>`;
 
         return `
             <div class="due-card" data-verba="${prefixo}">
@@ -300,14 +301,14 @@
         estado.competencias = Core.gerarCompetencias(porId("dataInicio").value, porId("dataFim").value);
         if (!estado.competencias.length) throw new Error("A data final deve ser igual ou posterior à data inicial.");
         const semTeto = estado.competencias.find((item) => !Data.tetoNaCompetencia(item.competencia));
-        if (semTeto) throw new Error(`Ainda não há teto cadastrado para ${semTeto.competencia}. Escolha um período entre 2019 e 2026.`);
+        if (semTeto) throw new Error(`Ainda não há teto cadastrado para ${semTeto.competencia}. Escolha um período a partir de 2019.`);
         const semDescontos = estado.competencias.find((item) =>
             !Descontos.PREVIDENCIA.some((tabela) =>
                 item.competencia >= tabela.inicio && item.competencia <= tabela.fim
             )
         );
         if (semDescontos) {
-            throw new Error(`Ainda não há tabelas de descontos para ${semDescontos.competencia}. Escolha um período entre 2021 e 2026.`);
+            throw new Error(`Ainda não há tabelas de descontos para ${semDescontos.competencia}. Escolha um período a partir de 2021.`);
         }
         const parciais = estado.competencias.filter((item) => item.eParcial);
         porId("resumoParcial").textContent = parciais.length
@@ -322,9 +323,19 @@
             : Core.proporcionalizar(rubrica.valorCentavos, dias);
     }
 
+    function diasDaCompetencia(competencia) {
+        const item = estado.competencias.find((base) => base.competencia === competencia);
+        return estado.overrides[competencia]?.diasTrabalhados ?? item?.diasTrabalhados ?? 0;
+    }
+
     function remuneracaoSujeitaTetoRecebida(competencia, dias) {
         const valores = valoresPerfil(competencia);
         return rubricasRecebidasSelecionadas(competencia).reduce((total, id) => {
+            if (id === "pp" && valores.pp?.pagamentoMesSeguinte) {
+                const anterior = Core.competenciaAnterior(competencia);
+                const rubrica = valoresPerfil(anterior).pp;
+                return total + valorRubricaRecebida(rubrica, diasDaCompetencia(anterior));
+            }
             const rubrica = valores[id];
             if (!rubrica || rubrica.sujeitaTeto === false) return total;
             return total + valorRubricaRecebida(rubrica, dias);

@@ -82,6 +82,12 @@
         return mes === 12 ? `${ano + 1}-01` : `${ano}-${String(mes + 1).padStart(2, "0")}`;
     }
 
+    function competenciaAnterior(competencia) {
+        if (!/^\d{4}-\d{2}$/.test(competencia || "")) return competencia;
+        const [ano, mes] = competencia.split("-").map(Number);
+        return mes === 1 ? `${ano - 1}-12` : `${ano}-${String(mes - 1).padStart(2, "0")}`;
+    }
+
     function atinDevidoNaCompetencia(competencia, dataIngresso) {
         const ingresso = competenciaDaData(dataIngresso);
         return !ingresso || competencia > ingresso;
@@ -202,8 +208,34 @@
             const idsRecebidos = configuracao.rubricasRecebidasPorCompetencia?.[competencia]
                 || configuracao.rubricasRecebidas
                 || [];
+            const ppNoMesSeguinte = valoresPerfil.pp?.pagamentoMesSeguinte === true;
+
+            function diasNaCompetencia(chave) {
+                const ajuste = (configuracao.overrides || {})[chave];
+                if (Number.isInteger(ajuste?.diasTrabalhados)) return ajuste.diasTrabalhados;
+                const item = configuracao.competencias.find((base) => base.competencia === chave);
+                return item ? item.diasTrabalhados : 0;
+            }
+
+            function produtividadeAnterior(chavePagamento) {
+                const anterior = competenciaAnterior(chavePagamento);
+                const dias = diasNaCompetencia(anterior);
+                const origem = dias > 0 ? configuracao.obterValoresPerfil(anterior)?.pp : null;
+                if (!origem) return null;
+                return normalizarRubrica({
+                    id: "pp",
+                    nome: origem.nome,
+                    valorCheioCentavos: origem.valorCentavos,
+                    sujeitaTeto: origem.sujeitaTeto,
+                    tributavel: origem.tributavel,
+                    liquida: origem.liquida,
+                    proporcional: origem.proporcional,
+                    origem: "verba"
+                }, dias);
+            }
+
             let recebidas = idsRecebidos
-                .filter((id) => valoresPerfil[id])
+                .filter((id) => valoresPerfil[id] && !(id === "pp" && ppNoMesSeguinte))
                 .map((id) => normalizarRubrica({
                     id,
                     nome: valoresPerfil[id].nome,
@@ -213,6 +245,10 @@
                     liquida: valoresPerfil[id].liquida,
                     proporcional: valoresPerfil[id].proporcional
                 }, diasTrabalhados));
+            if (ppNoMesSeguinte && idsRecebidos.includes("pp")) {
+                const produtividade = produtividadeAnterior(competencia);
+                if (produtividade) recebidas.push(produtividade);
+            }
             if (Number.isInteger(override.brutoRecebidoCentavos)) {
                 const calculado = somarCentavos(
                     recebidas
@@ -235,9 +271,16 @@
             }
 
             const devidas = (configuracao.verbasDevidas || [])
-                .filter((verba) => verba.ativa !== false && estaNaVigencia(competencia, verba.inicio, verba.fim))
+                .filter((verba) => verba.ativa !== false)
                 .filter((verba) => !eVerbaAtin(verba) || atinDevidoNaCompetencia(competencia, configuracao.dataIngresso))
+                .filter((verba) => {
+                    if (verba.tipo === "pp" && ppNoMesSeguinte) {
+                        return estaNaVigencia(competenciaAnterior(competencia), verba.inicio, verba.fim);
+                    }
+                    return estaNaVigencia(competencia, verba.inicio, verba.fim);
+                })
                 .map((verba) => {
+                    const produtividadeAtrasada = verba.tipo === "pp" && ppNoMesSeguinte;
                     const origem = verba.tipo === "personalizada"
                         ? {
                             nome: verba.nome || "Outra verba",
@@ -246,7 +289,9 @@
                             tributavel: verba.tributavel !== false,
                             liquida: verba.liquida === true
                         }
-                        : valoresPerfil[verba.tipo];
+                        : produtividadeAtrasada
+                            ? configuracao.obterValoresPerfil(competenciaAnterior(competencia))?.pp
+                            : valoresPerfil[verba.tipo];
                     if (!origem) return null;
                     return normalizarRubrica({
                         id: verba.id || verba.tipo,
@@ -257,7 +302,7 @@
                         liquida: verba.liquida ?? origem.liquida,
                         proporcional: verba.proporcional ?? origem.proporcional,
                         origem: "retroativo"
-                    }, diasTrabalhados);
+                    }, produtividadeAtrasada ? diasNaCompetencia(competenciaAnterior(competencia)) : diasTrabalhados);
                 })
                 .filter(Boolean);
 
@@ -309,6 +354,7 @@
         estaNaVigencia,
         competenciaDaData,
         proximaCompetencia,
+        competenciaAnterior,
         atinDevidoNaCompetencia,
         proporcionalizar,
         normalizarRubrica,

@@ -99,6 +99,8 @@ test("deriva a cota do teto da competência", () => {
     assert.equal(Data.tetoNaCompetencia("2025-06").valor, 34572.89);
     assert.equal(Data.tetoNaCompetencia("2025-07").valor, 36301.53);
     assert.equal(Data.valorCota("2026-04"), 36301.53 / 12000);
+    assert.equal(Data.tetoNaCompetencia("2027-01").valor, 46366.19);
+    assert.equal(Data.valorCota("2027-01"), 36301.53 / 12000);
 });
 
 test("calcula ATIN em 300 UFESPs pela competência", () => {
@@ -110,7 +112,12 @@ function perfilTurma(funcaoId, competencia) {
     const valores = Data.calcularRubricasPerfil({ cargo: 1, funcaoId, tempoServico: 0, icm: 0 }, competencia);
     return {
         vb: { nome: "Vencimento básico", valorCentavos: Core.paraCentavos(valores.vb), sujeitaTeto: true },
-        pp: { nome: "Prêmio de produtividade", valorCentavos: Core.paraCentavos(valores.pp), sujeitaTeto: true },
+        pp: {
+            nome: "Prêmio de produtividade",
+            valorCentavos: Core.paraCentavos(valores.pp),
+            sujeitaTeto: true,
+            pagamentoMesSeguinte: funcaoId === 39
+        },
         pl: { nome: "Pró-labore", valorCentavos: Core.paraCentavos(valores.pl), sujeitaTeto: true },
         atin: {
             nome: "ATIN",
@@ -210,9 +217,7 @@ test("turma 2026 GT: agosto só VB; setembro já correto", () => {
             "2026-09": ["vb", "pp", "pl", "atin"]
         },
         dataIngresso: "2026-08-14",
-        verbasDevidas: [
-            { tipo: "pp", inicio: "2026-08", fim: "2026-08", ativa: true }
-        ],
+        verbasDevidas: [],
         obterTetoCentavos: (key) => Core.paraCentavos(Data.tetoNaCompetencia(key).valor),
         obterValoresPerfil: (key) => perfilTurma(39, key)
     });
@@ -223,11 +228,32 @@ test("turma 2026 GT: agosto só VB; setembro já correto", () => {
     assert.equal(agosto.diasTrabalhados, 17);
     assert.equal(agosto.brutoRecebidoCentavos, Core.proporcionalizar(ago.vb.valorCentavos, 17));
     assert.equal(agosto.retroLiquidoExtraCentavos, 0);
-    assert.equal(agosto.retroativoBrutoCentavos, Core.proporcionalizar(ago.pp.valorCentavos, 17));
-    assert.equal(setembro.brutoRecebidoCentavos, set.vb.valorCentavos + set.pp.valorCentavos + set.pl.valorCentavos);
+    assert.equal(agosto.retroativoBrutoCentavos, 0);
+    assert.equal(
+        setembro.brutoRecebidoCentavos,
+        set.vb.valorCentavos + Core.proporcionalizar(ago.pp.valorCentavos, 17) + set.pl.valorCentavos
+    );
     assert.equal(setembro.liquidasRecebidasCentavos, set.atin.valorCentavos);
     assert.equal(setembro.retroativoBrutoCentavos, 0);
     assert.equal(setembro.retroLiquidoExtraCentavos, 0);
+});
+
+test("produtividade do GT sem função só entra na competência seguinte", () => {
+    const resultado = Core.calcularRetroativos({
+        competencias: Core.gerarCompetencias("2026-08-14", "2026-09-30"),
+        dataIngresso: "2026-08-14",
+        rubricasRecebidasPorCompetencia: {
+            "2026-08": ["vb"],
+            "2026-09": ["vb"]
+        },
+        verbasDevidas: [{ tipo: "pp", inicio: "2026-08", fim: "2026-08", ativa: true }],
+        obterTetoCentavos: (key) => Core.paraCentavos(Data.tetoNaCompetencia(key).valor),
+        obterValoresPerfil: (key) => perfilTurma(39, key)
+    });
+    const ppAgosto = Core.proporcionalizar(perfilTurma(39, "2026-08").pp.valorCentavos, 17);
+    assert.equal(resultado.linhas[0].retroativoBrutoCentavos, 0);
+    assert.equal(resultado.linhas[1].retroativoBrutoCentavos, ppAgosto);
+    assert.equal(resultado.linhas[1].verbasDevidas[0].valorCentavos, ppAgosto);
 });
 
 test("ATIN só é devido no mês seguinte ao ingresso", () => {

@@ -40,6 +40,14 @@
             valor: 36301.53,
             norma: "Lei nº 18.385/2025",
             fonte: "https://www.al.sp.gov.br/repositorio/legislacao/lei/2025/lei-18152-02.06.2025.html"
+        },
+        {
+            inicio: "2027-01",
+            fim: "2099-12",
+            valor: 46366.19,
+            baseDaCota: false,
+            norma: "Teto federal — subsídio dos ministros do STF, Lei nº 14.520/2023",
+            fonte: "http://www.planalto.gov.br/ccivil_03/_ato2023-2026/2023/lei/L14520.htm"
         }
     ];
 
@@ -49,7 +57,7 @@
         { inicio: "2023-01", fim: "2023-12", valor: 34.26 },
         { inicio: "2024-01", fim: "2024-12", valor: 35.36 },
         { inicio: "2025-01", fim: "2025-12", valor: 37.02 },
-        { inicio: "2026-01", fim: "2026-12", valor: 38.42 }
+        { inicio: "2026-01", fim: "2099-12", valor: 38.42 }
     ];
     const FONTE_UFESP = "https://portal.fazenda.sp.gov.br/Noticias/Paginas/ufesp2026.aspx";
 
@@ -119,8 +127,16 @@
         return TETOS_SP.find((item) => competencia >= item.inicio && competencia <= item.fim) || null;
     }
 
+    function tetoBaseDaCota(competencia) {
+        const bases = TETOS_SP.filter((item) => item.baseDaCota !== false);
+        const vigente = bases.find((item) => competencia >= item.inicio && competencia <= item.fim);
+        if (vigente) return vigente;
+        const anteriores = bases.filter((item) => item.fim < competencia);
+        return anteriores[anteriores.length - 1] || null;
+    }
+
     function valorCota(competencia) {
-        const teto = tetoNaCompetencia(competencia);
+        const teto = tetoBaseDaCota(competencia);
         return teto ? teto.valor / 12000 : null;
     }
 
