@@ -5,12 +5,13 @@
 })(typeof globalThis !== "undefined" ? globalThis : this, function () {
     "use strict";
 
-    function reflexo(id, nome, valorCentavos) {
+    function reflexo(id, nome, valorCentavos, sujeitaTeto) {
         return {
             id,
             nome,
             valorCentavos: Math.max(0, Math.round(valorCentavos)),
-            sujeitaTeto: true,
+            sujeitaTeto: sujeitaTeto === true,
+            tributavel: false,
             origem: "judicial"
         };
     }
@@ -35,7 +36,7 @@
                 const quinquenio = contexto.valoresPerfil.quinquenio?.valorCentavos || 0;
                 const itens = [];
                 if (opcoes.incluirPrincipal) {
-                    itens.push(reflexo("quinquenio-principal", "Diferença de quinquênio", quinquenio));
+                    itens.push(reflexo("quinquenio-principal", "Diferença de quinquênio", quinquenio, true));
                 }
                 if (contexto.adquireAvo) {
                     itens.push(reflexo("quinquenio-13", "Reflexo do quinquênio no 13º", quinquenio / 12));

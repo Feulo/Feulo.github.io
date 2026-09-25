@@ -204,8 +204,34 @@ main {
 }
 
 .detail-grid h3 {
-    font-size: .95rem;
-    margin-bottom: .6rem;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--cor-primaria);
+    background: var(--cor-secundaria);
+    margin: 0 0 .15rem;
+    padding: .45rem .7rem;
+    border-left: 4px solid var(--cor-primaria);
+    border-radius: 0 4px 4px 0;
+}
+
+.detail-grid .subsecao {
+    margin-top: .85rem;
+    padding-bottom: .25rem;
+}
+
+.detail-grid .item-resultado {
+    padding: .4rem 0;
+    font-size: .9rem;
+}
+
+.detail-grid .folha-final {
+    margin-top: .35rem;
+    padding: .5rem .55rem;
+    border-bottom: 0;
+    border-radius: .35rem;
+    background: var(--cor-secundaria);
+    color: var(--cor-primaria);
+    font-weight: 700;
 }
 
 .detail-line,
@@ -249,12 +275,14 @@ main {
     font-weight: 700;
 }
 
-.net-line {
-    color: #166534;
+.discount-line.folha-final {
+    color: var(--cor-primaria);
+    background: var(--cor-secundaria);
     border-bottom: 0;
-    border-top: 2px solid var(--cor-borda);
-    margin-top: .35rem;
-    padding-top: .6rem;
+    border-radius: .35rem;
+    margin-top: .45rem;
+    padding: .55rem .4rem;
+    font-weight: 700;
 }
 
 @media (max-width: 767px) {

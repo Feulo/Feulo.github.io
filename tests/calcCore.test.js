@@ -90,9 +90,27 @@ test("serviços judiciais geram reflexos somente com pelo menos 15 dias", () => 
         quinquenio: { ativo: true, incluirPrincipal: true }
     });
     assert.deepEqual(itens.map((item) => item.valorCentavos), [10000, 13333, 90000, 7500, 10000]);
+    assert.deepEqual(itens.map((item) => item.sujeitaTeto), [false, false, true, false, false]);
     assert.deepEqual(Judiciais.calcularServicos({ ...contexto, adquireAvo: false }, {
         reflexoPR: { ativo: true }
     }), []);
+});
+
+test("reflexo de 13º e férias não é consumido pelo abate teto do mês", () => {
+    const reflexos = Judiciais.calcularServicos({
+        adquireAvo: true,
+        valoresPerfil: { pr: { valorCentavos: 120000 } }
+    }, { reflexoPR: { ativo: true } });
+    const resultado = Core.calcularCompetencia({
+        tetoCentavos: Core.paraCentavos(36301.53),
+        rubricasRecebidas: [rubrica("VB", 40000)],
+        verbasDevidas: [],
+        reflexosJudiciais: reflexos
+    });
+    const reflexoCentavos = reflexos.reduce((total, item) => total + item.valorCentavos, 0);
+    assert.equal(resultado.abateIncrementalCentavos, 0);
+    assert.equal(resultado.retroativoAjustadoCentavos, reflexoCentavos);
+    assert.equal(resultado.baseTributavelRecalculadaCentavos, Core.paraCentavos(36301.53));
 });
 
 test("deriva a cota do teto da competência", () => {

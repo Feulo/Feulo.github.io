@@ -431,22 +431,68 @@
         };
     }
 
-    function linhasRubricas(itens) {
-        if (!itens.length) return `<div class="text-muted small">Nenhuma rubrica.</div>`;
-        return itens.map((item) => `
-            <div class="detail-line">
-                <span>${escapar(item.nome)}</span>
-                <strong>${moeda(item.valorCentavos)}</strong>
-            </div>`).join("");
+    const ORDEM_FOLHA = ["vb", "pp", "pl", "quinquenio", "sextaParte", "pr", "atin", "override-bruto"];
+
+    function ordenarFolha(itens) {
+        return [...itens].sort((a, b) => {
+            const posicao = (item) => {
+                const indice = ORDEM_FOLHA.indexOf(item.id);
+                return indice === -1 ? ORDEM_FOLHA.length : indice;
+            };
+            return posicao(a) - posicao(b);
+        });
     }
 
-    function linhaDesconto(nome, original, recalculado, diferenca) {
+    function linhaFolha(sinal, nome, valorCentavos, classe, detalhe) {
+        return `<div class="item-resultado${classe ? ` ${classe}` : ""}">
+            <div class="item-esquerda">
+                <span>(${sinal}) ${escapar(nome)}</span>
+                ${detalhe ? `<span class="item-cotas">${detalhe}</span>` : ""}
+            </div>
+            <span class="item-valor">${moeda(valorCentavos)}</span>
+        </div>`;
+    }
+
+    function painelFolha({ titulo, itens, brutoCentavos, abateCentavos, tetoCentavos, extrasCentavos, finalCentavos, rotuloFinal }) {
+        const visiveis = ordenarFolha(itens).filter((item) => item.valorCentavos);
+        const daConta = visiveis.filter((item) => item.liquida !== true);
+        const liquidas = visiveis.filter((item) => item.liquida === true);
+        const temAbate = abateCentavos > 0;
+        const temExtras = extrasCentavos > 0 || liquidas.length > 0;
+        const aposTeto = brutoCentavos - abateCentavos;
+        const parcelas = daConta.map((item) => linhaFolha("+", item.nome, item.valorCentavos)).join("")
+            || `<div class="text-muted small py-2">Nenhuma rubrica neste mês.</div>`;
+        const indenizatorias = liquidas.map((item) => linhaFolha("+", item.nome, item.valorCentavos, "text-success")).join("")
+            || (extrasCentavos ? linhaFolha("+", "Extras líquidas e extra teto", extrasCentavos, "text-success") : "");
+        return `<h3>${escapar(titulo)}</h3>
+            <div class="subsecao">Cálculo da remuneração</div>
+            ${parcelas}
+            ${temAbate || temExtras ? linhaFolha("=", "Valor bruto", brutoCentavos, "fw-bold") : ""}
+            ${temAbate ? linhaFolha("−", "Abate teto", abateCentavos, "text-danger", `(teto ${moeda(tetoCentavos)})`) : ""}
+            ${temExtras && temAbate ? linhaFolha("=", "Após o teto", aposTeto, "fw-bold") : ""}
+            ${temExtras ? `<div class="subsecao">Verbas indenizatórias</div>${indenizatorias}` : ""}
+            ${linhaFolha("=", rotuloFinal, finalCentavos, "folha-final")}`;
+    }
+
+    function classeResultado(centavos) {
+        if (centavos > 0) return "text-success";
+        if (centavos < 0) return "text-danger";
+        return "";
+    }
+
+    function linhaDesconto(nome, original, recalculado, diferenca, opcoes = {}) {
+        if (!opcoes.sempre && !original && !recalculado && !diferenca) return "";
+        const sinal = opcoes.sinal || "−";
+        const classe = opcoes.classe || "text-danger";
+        const diferencaClasse = opcoes.classeDiferenca !== undefined
+            ? opcoes.classeDiferenca
+            : (diferenca ? "text-danger" : "");
         return `
-            <div class="discount-line">
-                <span>${nome}</span>
+            <div class="discount-line ${classe}">
+                <span>(${sinal}) ${nome}</span>
                 <span>${moeda(original)}</span>
                 <span>${moeda(recalculado)}</span>
-                <strong class="${diferenca ? "text-danger" : ""}">${moeda(diferenca)}</strong>
+                <strong class="${diferencaClasse}">${moeda(diferenca)}</strong>
             </div>`;
     }
 
@@ -465,10 +511,7 @@
                 ...linha,
                 descontos,
                 descontosAdicionaisCentavos,
-                liquidoRetroativoCentavos: Math.max(
-                    0,
-                    linha.retroativoAjustadoCentavos - descontosAdicionaisCentavos
-                )
+                liquidoRetroativoCentavos: linha.retroativoAjustadoCentavos - descontosAdicionaisCentavos
             };
         });
         const { linhas, totais } = estado.resultado;
@@ -491,7 +534,7 @@
                 <td class="text-end">${moeda(linha.remuneracaoBrutaRecalculadaCentavos)}</td>
                 <td class="text-end text-danger">${moeda(linha.abateIncrementalCentavos)}</td>
                 <td class="text-end text-danger">${moeda(linha.descontosAdicionaisCentavos)}</td>
-                <td class="text-end fw-bold text-success">${moeda(linha.liquidoRetroativoCentavos)}</td>
+                <td class="text-end fw-bold ${classeResultado(linha.liquidoRetroativoCentavos)}">${moeda(linha.liquidoRetroativoCentavos)}</td>
             </tr>
             <tr class="detail-row">
                 <td colspan="8">
@@ -499,22 +542,32 @@
                         <summary>Ver rubricas e descontos de ${linha.competencia.slice(5)}/${linha.competencia.slice(0, 4)}</summary>
                         <div class="detail-grid">
                             <section>
-                                <h3>Remuneração original</h3>
-                                ${linhasRubricas(linha.rubricasRecebidas)}
-                                <div class="detail-total"><span>Bruto original</span><strong>${moeda(linha.remuneracaoBrutaOriginalCentavos)}</strong></div>
-                                <div class="detail-total"><span>Extras líquidas recebidas</span><strong>${moeda(linha.liquidasRecebidasCentavos)}</strong></div>
-                                <div class="detail-total"><span>Total recebido</span><strong>${moeda(linha.remuneracaoTotalOriginalCentavos)}</strong></div>
-                                <div class="detail-total"><span>Após teto + extras</span><strong>${moeda(linha.remuneracaoAposTetoOriginalCentavos)}</strong></div>
+                                ${painelFolha({
+                                    titulo: "Remuneração já paga",
+                                    itens: linha.rubricasRecebidas,
+                                    brutoCentavos: linha.remuneracaoBrutaOriginalCentavos,
+                                    abateCentavos: linha.abateOriginalCentavos,
+                                    tetoCentavos: linha.tetoCentavos,
+                                    extrasCentavos: linha.liquidasRecebidasCentavos,
+                                    finalCentavos: linha.remuneracaoAposTetoOriginalCentavos,
+                                    rotuloFinal: "Recebido"
+                                })}
                             </section>
                             <section>
-                                <h3>Verbas retroativas</h3>
-                                ${linhasRubricas(retroativos)}
-                                <div class="detail-total"><span>Retroativo bruto</span><strong>${moeda(linha.retroativoBrutoCentavos)}</strong></div>
-                                <div class="detail-total"><span>Extras líquidas e extra-teto</span><strong>${moeda(linha.retroLiquidoExtraCentavos)}</strong></div>
-                                <div class="detail-total"><span>Após teto + extras</span><strong>${moeda(linha.retroativoAjustadoCentavos)}</strong></div>
+                                ${painelFolha({
+                                    titulo: "Verbas retroativas",
+                                    itens: retroativos,
+                                    brutoCentavos: linha.retroativoBrutoCentavos,
+                                    abateCentavos: linha.abateIncrementalCentavos,
+                                    tetoCentavos: linha.tetoCentavos,
+                                    extrasCentavos: linha.retroLiquidoExtraCentavos,
+                                    finalCentavos: linha.retroativoAjustadoCentavos,
+                                    rotuloFinal: "A receber"
+                                })}
                             </section>
                         </div>
                         <div class="discount-detail">
+                            <div class="subsecao">Deduções</div>
                             <div class="discount-line discount-header">
                                 <span>Desconto</span><span>Original</span><span>Recalculado</span><span>Diferença</span>
                             </div>
@@ -522,13 +575,8 @@
                             ${linhaDesconto("Previdência complementar", descontos.original.complementarCentavos, descontos.recalculado.complementarCentavos, descontos.diferenca.complementarCentavos)}
                             ${linhaDesconto("IRRF", descontos.original.irrfCentavos, descontos.recalculado.irrfCentavos, descontos.diferenca.irrfCentavos)}
                             ${linhaDesconto("IAMSPE", descontos.original.iamspeCentavos, descontos.recalculado.iamspeCentavos, descontos.diferenca.iamspeCentavos)}
-                            ${linhaDesconto("Total", descontos.original.totalCentavos, descontos.recalculado.totalCentavos, descontos.diferenca.totalCentavos)}
-                            <div class="discount-line net-line">
-                                <span>Líquido estimado</span>
-                                <span>${moeda(linha.remuneracaoAposTetoOriginalCentavos - descontos.original.totalCentavos)}</span>
-                                <span>${moeda(linha.remuneracaoAposTetoRecalculadaCentavos - descontos.recalculado.totalCentavos)}</span>
-                                <strong>${moeda(linha.liquidoRetroativoCentavos)}</strong>
-                            </div>
+                            ${linhaDesconto("Total das deduções", descontos.original.totalCentavos, descontos.recalculado.totalCentavos, descontos.diferenca.totalCentavos, { sempre: true, sinal: "=", classe: "fw-bold", classeDiferenca: descontos.diferenca.totalCentavos ? "text-danger" : "" })}
+                            ${linhaDesconto("Líquido", linha.remuneracaoAposTetoOriginalCentavos - descontos.original.totalCentavos, linha.remuneracaoAposTetoRecalculadaCentavos - descontos.recalculado.totalCentavos, linha.liquidoRetroativoCentavos, { sempre: true, sinal: "=", classe: "folha-final", classeDiferenca: classeResultado(linha.liquidoRetroativoCentavos) })}
                         </div>
                     </details>
                 </td>
