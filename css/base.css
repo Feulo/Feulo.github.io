@@ -92,6 +92,7 @@
 .item-esquerda {
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
     gap: 0.5rem; /* Define um espaço fixo e bonito entre o nome e os parênteses */
 }
 
@@ -110,4 +111,222 @@
 
 header nav a:hover {
     text-decoration: underline !important;
+}
+
+#iamspeExtras summary {
+    cursor: pointer;
+}
+
+.cota-card {
+    margin: 0.85rem 0 0.2rem;
+    padding: 0.8rem 0.95rem 0.75rem;
+    border: 1px solid var(--cor-borda);
+    border-left: 4px solid var(--cor-primaria);
+    border-radius: 8px;
+    background: #fff;
+}
+
+.cota-card-linha {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 1rem;
+}
+
+.cota-card-rotulo {
+    font-weight: 600;
+    color: var(--cor-primaria);
+}
+
+.cota-card-valor,
+.cota-card-limite span:last-child {
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.cota-card-valor {
+    font-weight: 700;
+    font-size: 1.2rem;
+    color: var(--cor-primaria);
+}
+
+.cota-card-limite {
+    margin-top: 0.35rem;
+    color: #64748b;
+    font-size: 0.95rem;
+}
+
+.cota-info {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    margin-left: 0.15rem;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: #64748b;
+    line-height: 1;
+    cursor: help;
+    vertical-align: middle;
+}
+
+.cota-balao {
+    display: none;
+    position: absolute;
+    left: 50%;
+    bottom: calc(100% + 8px);
+    transform: translateX(-50%);
+    width: 260px;
+    padding: 0.45rem 0.6rem;
+    background: #1e293b;
+    color: #fff;
+    font-size: 0.75rem;
+    font-weight: 500;
+    line-height: 1.35;
+    text-align: left;
+    border-radius: 6px;
+    z-index: 5;
+}
+
+.cota-balao::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 100%;
+    transform: translateX(-50%);
+    border: 6px solid transparent;
+    border-top-color: #1e293b;
+}
+
+.cota-info:hover .cota-balao,
+.cota-info:focus .cota-balao,
+.cota-info:focus-visible .cota-balao {
+    display: block;
+}
+
+#comparacaoTeto {
+    border: 1px solid var(--cor-borda);
+    border-radius: 8px;
+    overflow: hidden;
+    background: #fff;
+}
+
+#comparacaoTeto .comparacao-titulo {
+    padding: 0.65rem 0.9rem;
+    font-weight: 600;
+    color: var(--cor-primaria);
+    background: var(--cor-secundaria);
+    border-bottom: 1px solid var(--cor-borda);
+    border-left: 4px solid var(--cor-primaria);
+}
+
+#comparacaoTeto table {
+    width: 100%;
+    margin: 0;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+#comparacaoTeto th {
+    padding: 0.55rem 0.75rem;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--cor-primaria);
+    background: #fff;
+    border-bottom: 1px solid var(--cor-borda);
+    white-space: nowrap;
+}
+
+#comparacaoTeto td {
+    padding: 0.7rem 0.75rem;
+    border-bottom: 1px dashed #e2e8f0;
+    color: var(--cor-texto);
+    font-variant-numeric: tabular-nums;
+}
+
+#comparacaoTeto tbody tr:last-child td {
+    border-bottom: none;
+}
+
+#comparacaoTeto tbody tr {
+    cursor: pointer;
+}
+
+#comparacaoTeto tbody tr:hover td {
+    background: #f8fafc;
+}
+
+#comparacaoTeto tbody tr.ativa td {
+    background: #eff6ff;
+}
+
+#comparacaoTeto tbody tr.ativa td:first-child {
+    box-shadow: inset 3px 0 0 var(--cor-primaria);
+    font-weight: 600;
+    color: var(--cor-primaria);
+}
+
+#comparacaoTeto .cmp-cota {
+    color: #64748b;
+}
+
+#comparacaoTeto td.text-danger {
+    color: #dc3545;
+}
+
+#comparacaoTeto td.text-success {
+    color: #198754;
+}
+
+#comparacaoTeto td.text-primary {
+    color: #0d6efd;
+}
+
+#comparacaoTeto .comparacao-ajuda {
+    padding: 0.35rem 0.9rem 0.7rem;
+    font-size: 0.8rem;
+    color: #64748b;
+}
+
+.liquido-fixo {
+    display: none;
+}
+
+@media (max-width: 991.98px) {
+    .liquido-fixo.visivel {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 1030;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 1rem;
+        padding: 0.75rem 1rem calc(0.75rem + env(safe-area-inset-bottom));
+        background: #fff;
+        border-top: 1px solid var(--cor-borda);
+        color: var(--cor-primaria);
+    }
+
+    body.com-liquido-fixo {
+        padding-bottom: 4.75rem;
+    }
+}
+
+.liquido-fixo-rotulo {
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.liquido-fixo-comparacao {
+    font-size: 0.75rem;
+    font-weight: 400;
+    color: var(--cor-texto);
+}
+
+.liquido-fixo-valor {
+    font-size: 1.15rem;
+    font-weight: 700;
+    text-align: right;
 }

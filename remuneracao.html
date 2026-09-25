@@ -6,7 +6,7 @@
     <title>Calculadora de Remunerações : Auditor Fiscal da Receita Estadual - SEFAZ-SP</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <link href="./css/base.css" rel="stylesheet">
+    <link href="./css/base.css?v=20260925e" rel="stylesheet">
     <script src="./js/site-config.js"></script>
     <script src="./js/acesso.js"></script>
 </head>
@@ -38,6 +38,7 @@
                     </select>
                 </div>
                 
+				<label for="funcao" class="form-label mb-1 mt-2">Função</label>
 				<select id="funcao" class="form-select">
 
 				<optgroup label="Fiscalização Direta (Sem Função)">
@@ -200,11 +201,13 @@
                 </div>
                 
                 <div class="form-group mb-2">
-                    <label for="atin" class="form-label mb-1">Auxílio Transporte ATIN (Nos Conformes): </label>
-                    <select id="atin" class="form-select">
-                        <option value="1">Sim</option>
-                        <option value="0">Não</option>
+                    <label for="transporte" class="form-label mb-1">Transporte</label>
+                    <select id="transporte" class="form-select">
+                        <option value="nos">Nos Conformes</option>
+                        <option value="adicional">Adicional de transporte</option>
+                        <option value="nenhum">Nenhum</option>
                     </select>
+                    <div id="ajudaTransporte" class="form-text">Indenizatório. Não entra no imposto de renda.</div>
                 </div>
                 
                 <div class="subsecao fw-bold border-bottom mt-3 mb-2 pb-1">Teto remuneratório:</div>
@@ -229,35 +232,68 @@
                 </div>
                 
 
-                <div class="subsecao fw-bold border-bottom mt-3 mb-2 pb-1">IAMSPE:</div>
-                
+                <div class="subsecao fw-bold border-bottom mt-3 mb-2 pb-1">Auxílio saúde</div>
+
+                <div class="form-group mb-2">
+                    <label for="auxilioSaude" class="form-label mb-1">Plano</label>
+                    <select id="auxilioSaude" class="form-select">
+                        <option value="amafresp" selected>AMAFRESP</option>
+                        <option value="iamspe">IAMSPE</option>
+                        <option value="nenhum">Nenhum</option>
+                    </select>
+                </div>
+
+                <div id="grupoAmafresp">
+                    <div class="form-group mb-2">
+                        <label for="cotaAmafresp" class="form-label mb-1">Valor da cota AMAFRESP (R$)</label>
+                        <input type="number" id="cotaAmafresp" class="form-control" min="0" step="0.01" value="930">
+                        <div class="form-text">Setembro de 2026: R$ 930,00. A cota muda todo mês. <a href="https://amafresp.org.br/tabela-de-contribuicao/" target="_blank" rel="noopener">Tabela AMAFRESP</a></div>
+                    </div>
+                    <div class="form-group mb-2">
+                        <label for="faixaAmafresp" class="form-label mb-1">Faixa etária do titular</label>
+                        <select id="faixaAmafresp" class="form-select"></select>
+                    </div>
+                    <div class="form-check mb-2 d-none" id="grupoDescontoAmafresp">
+                        <input type="checkbox" id="desconto10Amafresp" class="form-check-input">
+                        <label for="desconto10Amafresp" class="form-check-label">10 anos ininterruptos no plano</label>
+                    </div>
+                    <details id="amafrespExtras" class="mb-2">
+                        <summary class="form-label">Dependentes e agregados</summary>
+                        <div id="listaAmafrespDependentes" class="mt-2"></div>
+                    </details>
+                </div>
+
+                <div id="grupoIamspe" class="d-none">
                 <div class="form-group mb-2">
                     <label for="iamspe" class="form-label mb-1">IAMSPE e faixa etária: </label>
                     <select id="iamspe" class="form-select">
-                        <option value="0.02">Sim (menos de 59 anos)</option>
-                        <option value="0.03">Sim (a partir de 59 anos)</option>
-                        <option value="0">Não</option>
+                        <option value="0.02">Menos de 59 anos (2%)</option>
+                        <option value="0.03">A partir de 59 anos (3%)</option>
                     </select>
                 </div>
                 
-                <div class="form-group mb-2">
-                    <label for="dependentesIamspeIdadeInferior" class="form-label mb-1">Beneficiários do IAMSPE com menos de 59 anos: </label> 
-                    <input type="number" id="dependentesIamspeIdadeInferior" class="form-control" min="0" max="20" value="0">
-                </div>
-                
-                <div class="form-group mb-2">
-                    <label for="dependentesIamspeIdadeSuperior" class="form-label mb-1">Beneficiários do IAMSPE com 59 anos ou mais: </label>
-                    <input type="number" id="dependentesIamspeIdadeSuperior" class="form-control" min="0" max="20" value="0">
-                </div>
-                
-                <div class="form-group mb-2">
-                    <label for="agregadosIamspeIdadeInferior" class="form-label mb-1">Agregados do IAMSPE com menos de 59 anos: </label>
-                    <input type="number" id="agregadosIamspeIdadeInferior" class="form-control" min="0" max="20" value="0">
-                </div>
-                
-                <div class="form-group mb-2">
-                    <label for="agregadosIamspeIdadeSuperior" class="form-label mb-1">Agregados do IAMSPE com 59 anos ou mais: </label>
-                    <input type="number" id="agregadosIamspeIdadeSuperior" class="form-control" min="0" max="20" value="0">
+                <details id="iamspeExtras" class="mb-2">
+                    <summary class="form-label">Beneficiários e agregados</summary>
+                    <div class="form-group mb-2 mt-2">
+                        <label for="dependentesIamspeIdadeInferior" class="form-label mb-1">Beneficiários do IAMSPE com menos de 59 anos: </label> 
+                        <input type="number" id="dependentesIamspeIdadeInferior" class="form-control" min="0" max="20" value="0">
+                    </div>
+                    
+                    <div class="form-group mb-2">
+                        <label for="dependentesIamspeIdadeSuperior" class="form-label mb-1">Beneficiários do IAMSPE com 59 anos ou mais: </label>
+                        <input type="number" id="dependentesIamspeIdadeSuperior" class="form-control" min="0" max="20" value="0">
+                    </div>
+                    
+                    <div class="form-group mb-2">
+                        <label for="agregadosIamspeIdadeInferior" class="form-label mb-1">Agregados do IAMSPE com menos de 59 anos: </label>
+                        <input type="number" id="agregadosIamspeIdadeInferior" class="form-control" min="0" max="20" value="0">
+                    </div>
+                    
+                    <div class="form-group mb-2">
+                        <label for="agregadosIamspeIdadeSuperior" class="form-label mb-1">Agregados do IAMSPE com 59 anos ou mais: </label>
+                        <input type="number" id="agregadosIamspeIdadeSuperior" class="form-control" min="0" max="20" value="0">
+                    </div>
+                </details>
                 </div>
                 
                 <div class="d-grid gap-2 py-3">
@@ -282,20 +318,20 @@
             <div class="item-resultado">
                 <div class="item-esquerda">
                     <span>(+) Prêmio Produtividade<sup><a href="#nota1">1</a></sup></span>
-                    <span class="item-cotas">(<span id="ppCotas"></span> cotas<sup><a href="#nota6">6</a></sup>)</span>
+                    <span class="item-cotas">(<span id="ppCotas"></span> cotas<sup><a href="#nota6">6</a></sup> · <span id="nomeFuncaoPp"></span>)</span>
                 </div>
                 <span class="item-valor" id="pp"></span>
             </div>
             
-            <div class="item-resultado">
+            <div class="item-resultado" id="linhaPl">
                 <div class="item-esquerda">
                     <span>(+) Pro Labore<sup><a href="#nota1">1</a></sup></span>
-                    <span class="item-cotas">(<span id="plCotas"></span> cotas<sup><a href="#nota6">6</a></sup>)</span>
+                    <span class="item-cotas">(<span id="plCotas"></span> cotas<sup><a href="#nota6">6</a></sup> · <span id="nomeFuncaoPl"></span>)</span>
                 </div>
                 <span class="item-valor" id="pl"></span>
             </div>
             
-            <div class="item-resultado">
+            <div class="item-resultado" id="linhaQq">
                 <div class="item-esquerda">
                     <span>(+) Quinquênios</span>
                     <span class="item-cotas">(<span id="aliquotaQq"></span>)</span>
@@ -303,7 +339,7 @@
                 <span class="item-valor" id="qq"></span>
             </div>
             
-            <div class="item-resultado">
+            <div class="item-resultado" id="linha6p">
                 <div class="item-esquerda">
                     <span>(+) Sexta Parte</span>
                     <span class="item-cotas">(<span id="aliquota6p"></span>)</span>
@@ -326,17 +362,27 @@
                 <span class="item-valor" id="remuneracaoBruta"></span>
             </div>
             
-            <div class="subsecao fw-bold border-bottom mt-3 mb-2 pb-1">Deduções</div>
-            
-            <div class="item-resultado">
-                <div class="item-esquerda">
-                    <span>Quota para pagamento<sup><a href="#nota6">6</a></sup></span>
-                    <span class="item-cotas" id="detalheQuota"></span>
+            <div class="cota-card">
+                <div class="cota-card-linha">
+                    <span class="cota-card-rotulo">
+                        Cota de Pagamento
+                        <button type="button" class="cota-info" id="ajudaCota" aria-label="Limitada pelo teto.">
+                            <i class="bi bi-info-circle" aria-hidden="true"></i>
+                            <span class="cota-balao" id="balaoCota" role="tooltip">Limitada pelo teto.</span>
+                        </button>
+                        <sup><a href="#nota6" id="notaCota" title="Limitada pelo teto.">6</a></sup>
+                    </span>
+                    <span class="cota-card-valor" id="quotaPagamento"></span>
                 </div>
-                <span class="item-valor" id="quotaPagamento"></span>
+                <div class="cota-card-linha cota-card-limite">
+                    <span>Cota limite<sup><a href="#nota8" title="Cota baseada no índice de variação nominal da arrecadação.">8</a></sup></span>
+                    <span id="detalheQuota"></span>
+                </div>
             </div>
 
-            <div class="item-resultado text-danger">
+            <div class="subsecao fw-bold border-bottom mt-3 mb-2 pb-1">Deduções</div>
+
+            <div class="item-resultado text-danger" id="linhaDeducaoTeto">
                 <div class="item-esquerda">
                     <span>(−) Dedução Teto<sup><a href="#nota3">3</a></sup></span>
                     <span class="item-cotas">(<span id="valorTeto"></span>)</span>
@@ -365,9 +411,10 @@
                 <span class="item-valor" id="irrf"></span>
             </div>
             
-            <div class="item-resultado border-bottom mb-2 pb-2 text-danger">
+            <div class="item-resultado border-bottom mb-2 pb-2 text-danger" id="linhaSaude">
                 <div class="item-esquerda">
-                    <span>(−) IAMSPE<sup><a href="#nota5">5</a></sup></span>
+                    <span id="labelSaude">(−) AMAFRESP<sup><a href="#nota5">5</a></sup></span>
+                    <span class="item-cotas" id="cotasSaude"></span>
                 </div>
                 <span class="item-valor" id="descontoIamspe"></span>
             </div>
@@ -389,7 +436,7 @@
                 <span class="item-valor" id="vr"></span>
             </div>
             
-            <div class="item-resultado border-bottom mb-2 pb-2 text-success">
+            <div class="item-resultado border-bottom mb-2 pb-2 text-success" id="linhaTransporte">
                 <div class="item-esquerda" id="labelAtin">
                     <span>(+) Nos Conformes</span>
                     <span class="item-cotas">(300 UFESPs<sup><a href="#nota7">7</a></sup>)</span>
@@ -400,11 +447,57 @@
             <div class="item-resultado fs-5 fw-bold text-primary bg-light p-2 rounded">
                 <div class="item-esquerda">
                     <span>(=) Vencimentos</span>
+                    <span class="item-cotas d-none" id="diferencaFolhaNormal"></span>
                 </div>
                 <span class="item-valor" id="vencimentos"></span>
             </div>
 
-            <div class="alert alert-info mt-4"><strong>Última atualização:</strong> 16/04/2026.</div>
+            <div id="comparacaoTeto" class="d-none mt-3">
+                <div class="comparacao-titulo">Comparação de teto e cota</div>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Situação</th>
+                                <th class="text-end">Cota</th>
+                                <th class="text-end">Teto</th>
+                                <th class="text-end">Abate</th>
+                                <th class="text-end">Vencimentos</th>
+                                <th class="text-end">Diferença</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr data-cenario="folha">
+                                <td id="cmp-folha-nome">Folha atual</td>
+                                <td id="cmp-folha-cota" class="text-end cmp-cota"></td>
+                                <td id="cmp-folha-teto" class="text-end"></td>
+                                <td id="cmp-folha-abate" class="text-end text-danger"></td>
+                                <td id="cmp-folha-venc" class="text-end text-primary fw-bold"></td>
+                                <td id="cmp-folha-diff" class="text-end">—</td>
+                            </tr>
+                            <tr data-cenario="cota-governador">
+                                <td id="cmp-cota-governador-nome">Teto STF e Cota governador</td>
+                                <td id="cmp-cota-governador-cota" class="text-end cmp-cota"></td>
+                                <td id="cmp-cota-governador-teto" class="text-end"></td>
+                                <td id="cmp-cota-governador-abate" class="text-end text-danger"></td>
+                                <td id="cmp-cota-governador-venc" class="text-end text-primary fw-bold"></td>
+                                <td id="cmp-cota-governador-diff" class="text-end"></td>
+                            </tr>
+                            <tr data-cenario="cota-teto">
+                                <td id="cmp-cota-teto-nome">Teto e cota STF</td>
+                                <td id="cmp-cota-teto-cota" class="text-end cmp-cota"></td>
+                                <td id="cmp-cota-teto-teto" class="text-end"></td>
+                                <td id="cmp-cota-teto-abate" class="text-end text-danger"></td>
+                                <td id="cmp-cota-teto-venc" class="text-end text-primary fw-bold"></td>
+                                <td id="cmp-cota-teto-diff" class="text-end"></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="comparacao-ajuda">Clique numa linha para abrir o holerite dessa situação.</div>
+            </div>
+
+            <div class="alert alert-info mt-4"><strong>Última atualização:</strong> 25/09/2026.</div>
         </section>
         
         <section class="col-lg-12 py-3 px-4 border-top mt-4">
@@ -412,13 +505,22 @@
             <div id="nota1" class="small mb-1 text-muted"><sup>1</sup> Valores retirados da <a href="https://www.imprensaoficial.com.br/DO/BuscaDO2001Documento_11_4.aspx?link=/2010/executivo%2520secao%2520i/abril/09/pag_0021_4G2DQE6D32FIAe1QPVDLL5CRH56.pdf&pagina=21&data=09/04/2010&caderno=Executivo%20I&paginaordenacao=100021" class="text-decoration-none">Resolução SF Nº 33 de 08/04/2010</a></div>
             <div id="nota2" class="small mb-1 text-muted"><sup>2</sup> Participação nos resultados foi linearizada para o pagamento em 3 meses respeitando o teto</div>
             <div id="nota3" class="small mb-1 text-muted"><sup>3</sup> O abate-teto usa o limite escolhido. A cota só muda junto com esse limite quando a opção “a cota acompanha este teto” está em sim. O limite da cota é 0,008334% do teto de referência, truncado em 4 casas, e não o teto dividido por 12.000.</div>
-            <div id="nota4" class="small mb-1 text-muted"><sup>4</sup> Valor obtido a partir da <a href="https://portal.fazenda.sp.gov.br/servicos/folha/Paginas/Contribuicao_Previdenciaria_Servidores_Ativos.aspx" class="text-decoration-none">tabela progressiva do RPPS do Estado de São Paulo</a> limitado ao teto do RGPS (R$ 8.475,55)</div>
-            <div id="nota5" class="small mb-1 text-muted"><sup>5</sup> Soma das aliquotas de todos os participantes aplicadas sobre o rendimento bruto (limitado ao teto)</div>
-            <div id="nota6" class="small mb-1 text-muted"><sup>6</sup> Quota de pagamento em setembro de 2026: R$ 3,0253, que é 0,008334% de R$ 36.301,53 truncado em 4 casas. A quota calculada pela arrecadação, na última tabela lida por inteiro (competência julho/2025, Portaria DGEP 08/2025), era R$ 5,6969. Não foi localizada, nesta revisão, a tabela numérica de portaria posterior a 1º/08/2025.</div>
+            <div id="nota4" class="small mb-1 text-muted"><sup>4</sup> <a href="https://www.al.sp.gov.br/repositorio/legislacao/lei.complementar/2020/lei.complementar-1354-06.03.2020.html" class="text-decoration-none">LC 1.354/2020</a>, art. 8º: no RGPS, 11% até R$ 1.621,00, 12% até R$ 4.174,58 e 14% até o teto do RGPS (R$ 8.475,55). A faixa de 16% acima desse teto vale para o RPPS (<a href="https://portal.fazenda.sp.gov.br/servicos/folha/Paginas/Contribuicao_Previdenciaria_Servidores_Ativos.aspx" class="text-decoration-none">tabela de 2026</a>).</div>
+            <div id="nota5" class="small mb-1 text-muted"><sup>5</sup> AMAFRESP: cotas da faixa etária vezes o valor da cota. Em setembro de 2026 a cota é R$ 930,00 (<a href="https://amafresp.org.br/tabela-de-contribuicao/" target="_blank" rel="noopener" class="text-decoration-none">tabela AMAFRESP</a>). Com 10 anos no plano, o desconto é de 1 cota dos 59 aos 63 anos e de 0,5 cota dos 64 aos 69. IAMSPE: soma das alíquotas sobre o rendimento bruto limitado ao teto. Os dois são desconto do líquido e não entram na base do IRRF.</div>
+            <div id="nota6" class="small mb-1 text-muted"><sup>6</sup> Cota de pagamento em setembro de 2026: R$ 3,0253, que é 0,008334% de R$ 36.301,53 truncado em 4 casas.</div>
             <div id="nota7" class="small mb-1 text-muted"><sup>7</sup> Valor da UFESP em 2026: R$ 38,42</div>
+            <div id="nota8" class="small mb-1 text-muted"><sup>8</sup> Cota baseada no índice de variação nominal da arrecadação. Em fevereiro de 2026: R$ 5,9080 (<a href="https://www.doe.sp.gov.br/executivo/secretaria-da-fazenda-e-planejamento/portaria-dgep-03-de-30-03-2026-20260331112812141743583" target="_blank" rel="noopener" class="text-decoration-none">Portaria DGEP 03, de 30/03/2026</a>).</div>
 		</section>
     </main>
     
+    <div id="liquidoFixo" class="liquido-fixo" hidden>
+        <div>
+            <div class="liquido-fixo-rotulo">Vencimentos</div>
+            <div id="liquidoFixoComparacao" class="liquido-fixo-comparacao"></div>
+        </div>
+        <div id="liquidoFixoValor" class="liquido-fixo-valor"></div>
+    </div>
+
 	<footer id="contato" class="col-lg-12 bg-primary text-center text-white py-4 mt-5 border-top border-4 border-warning shadow-lg">
 		<div class="fs-5 fw-bold mb-3">
 			<i class="bi bi-envelope-fill me-2"></i> Dúvidas ou encontrou algum problema? <br>
