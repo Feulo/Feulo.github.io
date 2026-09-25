@@ -4,7 +4,9 @@ const VALOR_REFEICAO = 55;
 const TETO_SP = 36301.53;
 const TETO_STF = 46366.19;
 const TETO_INSS = 8475.55;
-const COTA_SP = TETO_SP / 12000;
+// Última quota calculada cuja tabela foi lida por inteiro: competência jul/2025,
+// Portaria DGEP 08, de 29/07/2025. Não é o valor confirmado de setembro de 2026.
+const QUOTA_CALCULADA_PUBLICADA = 5.6969;
 const VALOR_NOS_CONFORMES = 300 * VALOR_UFESP; 
 const SALARIO_MINIMO = 1621.00;
 
@@ -89,8 +91,25 @@ const FAIXAS_RGPS = [
     { limite: TETO_INSS, aliquota: 0.14 } 
 ];
 
+// Art. 16, § 4º, item 2, da LC 1.059/2008: 0,008334% do limite do art. 115, XII, da CE.
+// As portarias truncam esse produto em 4 casas. Não é teto / 12.000.
+function limiteDaQuota(teto) {
+    const centavos = Math.round(Number(teto) * 100);
+    if (!Number.isFinite(centavos) || centavos <= 0) return 0;
+    return Math.floor((centavos * 8334) / 1000000) / 10000;
+}
+
 function numberToReal(numero) {
     return numero.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+}
+
+function numberToQuota(numero) {
+    return numero.toLocaleString('pt-BR', {
+        style: 'currency',
+        currency: 'BRL',
+        minimumFractionDigits: 4,
+        maximumFractionDigits: 4
+    });
 }
 
 function calcularFaixasProgressivas(valorBase, faixas) {
@@ -145,6 +164,7 @@ function calcSallary() {
     let previdenciaComplementar = Number(document.getElementById("previdenciaComplementar").value) / 100;
     let atin = Number(document.getElementById("atin").value);
     let tipoTeto = document.getElementById("tipoTeto").value;
+    let cotaAcompanhaTeto = document.getElementById("cotaAcompanhaTeto").value !== "0";
     let iamspe = Number(document.getElementById("iamspe").value);
     let agregadosIamspeIdadeInferior = Number(document.getElementById("agregadosIamspeIdadeInferior").value);
     let agregadosIamspeIdadeSuperior = Number(document.getElementById("agregadosIamspeIdadeSuperior").value);
@@ -156,19 +176,19 @@ function calcSallary() {
     let dependentesIRRFElem = document.getElementById("dependentesIRRF");
     let dependentesIRRF = dependentesIRRFElem ? Number(dependentesIRRFElem.value) : 0;
     
-    let VALOR_COTA;
-    let teto; 
-    
-    if (tipoTeto === "iludir") {
-        VALOR_COTA = TETO_STF / 12000;
+    let teto;
+    if (tipoTeto === "stf") {
         teto = TETO_STF;
-    } else if (tipoTeto === "stf") {
-        VALOR_COTA = COTA_SP;
-        teto = TETO_STF;
+    } else if (tipoTeto === "informado") {
+        teto = Number(document.getElementById("tetoInformado").value);
     } else {
-        VALOR_COTA = COTA_SP;
         teto = TETO_SP;
     }
+    if (!Number.isFinite(teto) || teto < 0) teto = 0;
+
+    const tetoDaCota = cotaAcompanhaTeto ? teto : TETO_SP;
+    const limiteQuota = limiteDaQuota(tetoDaCota);
+    const VALOR_COTA = Math.min(limiteQuota, QUOTA_CALCULADA_PUBLICADA);
     
     // Busca a função selecionada dentro do array de objetos unificado
     const funcaoObj = FUNCOES.find(f => f.id === funcaoId);
@@ -205,9 +225,23 @@ function calcSallary() {
     let basePrevidenciaComplementar = Math.max(0, baseParaPrevidencia - TETO_INSS);
     let previdenciaComplementarValor = basePrevidenciaComplementar * previdenciaComplementar;
 
+    // O adicional de transporte (1710 cotas) integra a base do IRRF.
+    // O ATIN / Nos Conformes é indenizatório e não altera o imposto.
+    let VALOR_AT = 6000 * 0.285 * VALOR_COTA;
+    let auxilio_transporte;
+    let adicionalTransporteNaBaseIRRF = 0;
+    if (atin === 1) {
+        auxilio_transporte = VALOR_NOS_CONFORMES;
+    } else if (atin === 0 && funcaoObj && funcaoObj.id === 39) {
+        auxilio_transporte = VALOR_AT;
+        adicionalTransporteNaBaseIRRF = VALOR_AT;
+    } else {
+        auxilio_transporte = 0;
+    }
+
     // 4. IRRF (Imposto de Renda)
-    // A base de cálculo do IRRF deduz a previdência oficial, a complementar e o valor por dependente
-    let baseIRRF = baseParaPrevidencia - valorPrevidenciaSocial - previdenciaComplementarValor - (dependentesIRRF * 189.59);
+    // A base deduz a previdência oficial, a complementar e o valor por dependente.
+    let baseIRRF = baseParaPrevidencia + adicionalTransporteNaBaseIRRF - valorPrevidenciaSocial - previdenciaComplementarValor - (dependentesIRRF * 189.59);
     let irrf = calcularIRRF(baseIRRF); 
 
     // 5. IAMSPE
@@ -220,19 +254,6 @@ function calcSallary() {
     let remuneracaoLiquida = baseParaPrevidencia - valorPrevidenciaSocial - previdenciaComplementarValor - irrf - totalDescontoIamspe;
 
     let vr = diasAlimentacao * VALOR_REFEICAO;
-    
-    // Nova lógica do Auxílio Transporte
-    let VALOR_AT = 6000*0.285*VALOR_COTA
-
-    let auxilio_transporte;
-    if (atin === 1) {
-        auxilio_transporte = VALOR_NOS_CONFORMES;
-    } else if (atin === 0 && funcaoObj && funcaoObj.id === 39){
-        auxilio_transporte = VALOR_AT;
-    } else {
-        auxilio_transporte = 0;  
-    }
-    
     let vencimentos = remuneracaoLiquida + vr + auxilio_transporte;
     
     // Atualização da Tela
@@ -257,6 +278,12 @@ function calcSallary() {
     
     document.getElementById("valorTeto").innerText = numberToReal(teto);
     document.getElementById("deducaoTeto").innerText = numberToReal(deducaoTeto);
+    const quotaPagamento = document.getElementById("quotaPagamento");
+    const detalheQuota = document.getElementById("detalheQuota");
+    if (quotaPagamento) quotaPagamento.innerText = numberToQuota(VALOR_COTA);
+    if (detalheQuota) {
+        detalheQuota.innerText = `(limite ${numberToQuota(limiteQuota)} · calculada conhecida ${numberToQuota(QUOTA_CALCULADA_PUBLICADA)})`;
+    }
     
     // Atualizado de 'rpps' para 'valorPrevidenciaSocial'
     // document.getElementById("rpps").innerText = regimePrevidenciario + ": " + numberToReal(valorPrevidenciaSocial);
@@ -297,6 +324,16 @@ function calcSallary() {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+    const tipoTeto = document.getElementById("tipoTeto");
+    const grupoTetoInformado = document.getElementById("grupoTetoInformado");
+    if (tipoTeto && grupoTetoInformado) {
+        const atualizarTetoInformado = () => {
+            grupoTetoInformado.classList.toggle("d-none", tipoTeto.value !== "informado");
+        };
+        tipoTeto.addEventListener("change", atualizarTetoInformado);
+        atualizarTetoInformado();
+    }
+
     const header = document.querySelector("header");
     if (!header || header.querySelector("nav")) return;
     const nav = document.createElement("nav");

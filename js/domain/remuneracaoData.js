@@ -135,9 +135,15 @@
         return anteriores[anteriores.length - 1] || null;
     }
 
+    function limiteDaQuota(teto) {
+        const centavos = Math.round(Number(teto) * 100);
+        if (!Number.isFinite(centavos) || centavos <= 0) return 0;
+        return Math.floor((centavos * 8334) / 1000000) / 10000;
+    }
+
     function valorCota(competencia) {
         const teto = tetoBaseDaCota(competencia);
-        return teto ? teto.valor / 12000 : null;
+        return teto ? limiteDaQuota(teto.valor) : null;
     }
 
     function ufespNaCompetencia(competencia) {
@@ -169,6 +175,7 @@
         VB_COTAS,
         FUNCOES,
         tetoNaCompetencia,
+        limiteDaQuota,
         valorCota,
         ufespNaCompetencia,
         calcularRubricasPerfil

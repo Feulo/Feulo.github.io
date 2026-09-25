@@ -98,9 +98,10 @@ test("serviços judiciais geram reflexos somente com pelo menos 15 dias", () => 
 test("deriva a cota do teto da competência", () => {
     assert.equal(Data.tetoNaCompetencia("2025-06").valor, 34572.89);
     assert.equal(Data.tetoNaCompetencia("2025-07").valor, 36301.53);
-    assert.equal(Data.valorCota("2026-04"), 36301.53 / 12000);
+    assert.equal(Math.round(Data.valorCota("2025-06") * 10000), 28813);
+    assert.equal(Math.round(Data.valorCota("2026-04") * 10000), 30253);
     assert.equal(Data.tetoNaCompetencia("2027-01").valor, 46366.19);
-    assert.equal(Data.valorCota("2027-01"), 36301.53 / 12000);
+    assert.equal(Math.round(Data.valorCota("2027-01") * 10000), 30253);
 });
 
 test("calcula ATIN em 300 UFESPs pela competência", () => {

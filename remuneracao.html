@@ -209,10 +209,22 @@
                 
                 <div class="subsecao fw-bold border-bottom mt-3 mb-2 pb-1">Teto remuneratório:</div>
                 <div class="form-group mb-2">
+                    <label for="tipoTeto" class="form-label mb-1">Limite usado no abate-teto</label>
                     <select id="tipoTeto" class="form-select">
-                        <option value="sp">Vencimento Bruto do Governador de SP</option>
-                        <option value="stf">Vencimento Bruto do Ministro do STF</option>
-                        <option value="iludir">Quero me iludir (Teto e cota STF)</option>
+                        <option value="sp">Subsídio do Governador de SP</option>
+                        <option value="stf">Subsídio do ministro do STF</option>
+                        <option value="informado">Teto informado</option>
+                    </select>
+                </div>
+                <div class="form-group mb-2 d-none" id="grupoTetoInformado">
+                    <label for="tetoInformado" class="form-label mb-1">Valor do teto (R$)</label>
+                    <input type="number" id="tetoInformado" class="form-control" min="0" step="0.01" value="36301.53">
+                </div>
+                <div class="form-group mb-2">
+                    <label for="cotaAcompanhaTeto" class="form-label mb-1">A cota acompanha este teto?</label>
+                    <select id="cotaAcompanhaTeto" class="form-select">
+                        <option value="0">Não — cota limitada pelo subsídio do Governador</option>
+                        <option value="1">Sim — cota limitada por este teto</option>
                     </select>
                 </div>
                 
@@ -316,6 +328,14 @@
             
             <div class="subsecao fw-bold border-bottom mt-3 mb-2 pb-1">Deduções</div>
             
+            <div class="item-resultado">
+                <div class="item-esquerda">
+                    <span>Quota para pagamento<sup><a href="#nota6">6</a></sup></span>
+                    <span class="item-cotas" id="detalheQuota"></span>
+                </div>
+                <span class="item-valor" id="quotaPagamento"></span>
+            </div>
+
             <div class="item-resultado text-danger">
                 <div class="item-esquerda">
                     <span>(−) Dedução Teto<sup><a href="#nota3">3</a></sup></span>
@@ -391,10 +411,10 @@
             <div class="secao fs-5 fw-bold text-secondary mb-3">Notas</div>
             <div id="nota1" class="small mb-1 text-muted"><sup>1</sup> Valores retirados da <a href="https://www.imprensaoficial.com.br/DO/BuscaDO2001Documento_11_4.aspx?link=/2010/executivo%2520secao%2520i/abril/09/pag_0021_4G2DQE6D32FIAe1QPVDLL5CRH56.pdf&pagina=21&data=09/04/2010&caderno=Executivo%20I&paginaordenacao=100021" class="text-decoration-none">Resolução SF Nº 33 de 08/04/2010</a></div>
             <div id="nota2" class="small mb-1 text-muted"><sup>2</sup> Participação nos resultados foi linearizada para o pagamento em 3 meses respeitando o teto</div>
-            <div id="nota3" class="small mb-1 text-muted"><sup>3</sup> No caso do Valor do teto pelo subsídio do ministro do STF, não foi considerada alteração no valor máximo da cota, que coninua 1/12.000 do salário do governador</div>
+            <div id="nota3" class="small mb-1 text-muted"><sup>3</sup> O abate-teto usa o limite escolhido. A cota só muda junto com esse limite quando a opção “a cota acompanha este teto” está em sim. O limite da cota é 0,008334% do teto de referência, truncado em 4 casas, e não o teto dividido por 12.000.</div>
             <div id="nota4" class="small mb-1 text-muted"><sup>4</sup> Valor obtido a partir da <a href="https://portal.fazenda.sp.gov.br/servicos/folha/Paginas/Contribuicao_Previdenciaria_Servidores_Ativos.aspx" class="text-decoration-none">tabela progressiva do RPPS do Estado de São Paulo</a> limitado ao teto do RGPS (R$ 8.475,55)</div>
             <div id="nota5" class="small mb-1 text-muted"><sup>5</sup> Soma das aliquotas de todos os participantes aplicadas sobre o rendimento bruto (limitado ao teto)</div>
-            <div id="nota6" class="small mb-1 text-muted"><sup>6</sup> Valor da cota em 2026: R$ 3,0253</div>
+            <div id="nota6" class="small mb-1 text-muted"><sup>6</sup> Quota de pagamento em setembro de 2026: R$ 3,0253, que é 0,008334% de R$ 36.301,53 truncado em 4 casas. A quota calculada pela arrecadação, na última tabela lida por inteiro (competência julho/2025, Portaria DGEP 08/2025), era R$ 5,6969. Não foi localizada, nesta revisão, a tabela numérica de portaria posterior a 1º/08/2025.</div>
             <div id="nota7" class="small mb-1 text-muted"><sup>7</sup> Valor da UFESP em 2026: R$ 38,42</div>
 		</section>
     </main>
