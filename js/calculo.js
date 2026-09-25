@@ -435,9 +435,9 @@ function calcSallary() {
     const labelPrevidencia = document.getElementById("labelPrevidencia");
     if (labelPrevidencia) {
         if (entrada.regimePrevidenciario === "RPPS") {
-            labelPrevidencia.innerHTML = `(−) Regime Previdenciário <span class="badge bg-primary ms-1 fw-normal">RPPS</span><sup><a href="#nota4">4</a></sup>`;
+            labelPrevidencia.innerHTML = `(−) Regime Previdenciário <span class="badge bg-primary ms-1 fw-normal">RPPS pré-reforma</span><sup><a href="#nota4">4</a></sup>`;
         } else {
-            labelPrevidencia.innerHTML = `(−) Regime Previdenciário <span class="badge bg-success ms-1 fw-normal">RGPS</span><sup><a href="#nota4">4</a></sup>`;
+            labelPrevidencia.innerHTML = `(−) Regime Previdenciário <span class="badge bg-success ms-1 fw-normal">RPPS pós-reforma</span><sup><a href="#nota4">4</a></sup>`;
         }
     }
 
