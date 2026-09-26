@@ -28,21 +28,25 @@ jobs:
         run: |
           python3 - <<'PY'
           import json, os, pathlib, re
-          senha = os.environ.get("SITE_PASSWORD", "")
-          if not senha:
-              raise SystemExit(0)
           path = pathlib.Path("js/site-config.js")
           texto = path.read_text()
-          literal = json.dumps(senha)
-          novo, trocas = re.subn(
-              r'senha:\s*"(?:\\.|[^"\\])*"',
-              f"senha: {literal}",
-              texto,
-              count=1,
-          )
-          if trocas != 1:
-              raise SystemExit("Não encontrei a senha em js/site-config.js")
-          path.write_text(novo)
+
+          def aplicar(texto, campo, valor):
+              if not valor:
+                  return texto
+              novo, trocas = re.subn(
+                  rf'{campo}:\s*"(?:\\.|[^"\\])*"',
+                  f"{campo}: {json.dumps(valor)}",
+                  texto,
+                  count=1,
+              )
+              if trocas != 1:
+                  raise SystemExit(f"Não encontrei {campo} em js/site-config.js")
+              return novo
+
+          texto = aplicar(texto, "senhaLegado", os.environ.get("SITE_PASSWORD", ""))
+          texto = aplicar(texto, "senhaAtual", os.environ.get("SITE_PASSWORD_ATUAL", ""))
+          path.write_text(texto)
           PY
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3

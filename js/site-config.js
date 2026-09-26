@@ -1,4 +1,5 @@
 window.SITE_CONFIG = {
-    // Trocada no deploy pelo secret SITE_PASSWORD do GitHub Actions.
-    senha: "tartaruga"
+    // Trocadas no deploy pelos secrets SITE_PASSWORD e SITE_PASSWORD_ATUAL.
+    senhaLegado: "tartaruga",
+    senhaAtual: "sinafresp"
 };
