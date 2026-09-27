@@ -275,9 +275,9 @@ function montarFolha(entrada) {
     const baseParaPrevidencia = valorBruto - deducaoTeto;
     const faixas = entrada.regimePrevidenciario === "RPPS" ? FAIXAS_RPPS : FAIXAS_RGPS;
     const excedenteInss = Math.max(0, baseParaPrevidencia - TETO_INSS);
-    // Aposentado: 11% só sobre o que ultrapassa o teto do INSS. Ativo segue as faixas.
+    // Aposentado: 16% só sobre o que ultrapassa o teto do INSS. Ativo segue as faixas.
     const valorPrevidenciaSocial = aposentado
-        ? excedenteInss * 0.11
+        ? excedenteInss * 0.16
         : calcularFaixasProgressivas(baseParaPrevidencia, faixas);
     const previdenciaComplementarValor = excedenteInss * entrada.previdenciaComplementar;
 
@@ -893,7 +893,7 @@ function calcSallary() {
     const labelPrevidencia = document.getElementById("labelPrevidencia");
     if (labelPrevidencia) {
         if (entrada.situacao === "aposentado") {
-            labelPrevidencia.innerHTML = `(−) Regime Previdenciário <span class="badge bg-primary ms-1 fw-normal">11% acima do teto do INSS</span><sup><a href="#nota4">4</a></sup>`;
+            labelPrevidencia.innerHTML = `(−) Regime Previdenciário <span class="badge bg-primary ms-1 fw-normal">16% acima do teto do INSS</span><sup><a href="#nota4">4</a></sup>`;
         } else if (entrada.regimePrevidenciario === "RPPS") {
             labelPrevidencia.innerHTML = `(−) Regime Previdenciário <span class="badge bg-primary ms-1 fw-normal">RPPS pré-reforma</span><sup><a href="#nota4">4</a></sup>`;
         } else {
