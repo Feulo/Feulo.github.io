@@ -314,6 +314,84 @@ header nav a:hover {
     }
 }
 
+.cenario-grade {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.cenario-card {
+    border: 1px solid var(--cor-borda);
+    border-radius: 8px;
+    padding: 0.85rem 1rem 0.7rem;
+    background: #fff;
+}
+
+.cenario-card header {
+    display: flex;
+    gap: 0.75rem;
+    align-items: flex-start;
+    margin-bottom: 0.35rem;
+}
+
+.cenario-card header span {
+    flex: 0 0 auto;
+    width: 1.7rem;
+    height: 1.7rem;
+    border-radius: 999px;
+    background: var(--cor-primaria);
+    color: #fff;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.cenario-card header strong,
+.cenario-card header small {
+    display: block;
+}
+
+.cenario-card header small,
+.cenario-hoje,
+.cenario-fecho {
+    color: #64748b;
+}
+
+.cenario-hoje,
+.cenario-fecho {
+    margin: 0.55rem 0 0;
+    font-size: 0.9rem;
+}
+
+.cenario-anos {
+    font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 991.98px) {
+    .cenario-grade {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media print {
+    body.imprimindo-relatorio * {
+        visibility: hidden;
+    }
+
+    body.imprimindo-relatorio #relatorioCenarios,
+    body.imprimindo-relatorio #relatorioCenarios * {
+        visibility: visible;
+    }
+
+    body.imprimindo-relatorio #relatorioCenarios {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+    }
+}
+
 .liquido-fixo-rotulo {
     font-size: 0.8rem;
     font-weight: 600;

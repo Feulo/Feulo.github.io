@@ -324,6 +324,140 @@ function montarFolha(entrada) {
     };
 }
 
+const SUBSIDIO_STF_2016 = 33763;
+const AUMENTO_MEDIO_DECADA = Math.pow(TETO_STF / SUBSIDIO_STF_2016, 1 / 10) - 1;
+const FUTUROS_COTA = [
+    {
+        nome: "Tudo como está hoje",
+        detalhe: "Governador e STF permanecem nos valores de 2026.",
+        governador: TETO_SP,
+        stf: TETO_STF
+    },
+    {
+        nome: "Os dois sobem",
+        detalhe: "Governador vai a R$ 40 mil e o STF a R$ 60 mil.",
+        governador: 40000,
+        stf: 60000
+    },
+    {
+        nome: "Tenebroso",
+        detalhe: "Governador congelado em R$ 36,3 mil e o STF vai a R$ 60 mil.",
+        governador: TETO_SP,
+        stf: 60000
+    },
+    {
+        nome: "Pesadelo",
+        detalhe: "Governador congelado em R$ 36,3 mil e o STF vai a R$ 70 mil.",
+        governador: TETO_SP,
+        stf: 70000
+    }
+];
+
+function folhaNoLimite(entrada, teto, tetoDaCota) {
+    return montarFolha({ ...entrada, teto, tetoDaCota });
+}
+
+function linhaCenario(sinal, nome, detalhe, valor, classe) {
+    return `<div class="item-resultado${classe ? ` ${classe}` : ""}">
+        <div class="item-esquerda">
+            <span>(${sinal}) ${nome}</span>
+            <span class="item-cotas">${detalhe}</span>
+        </div>
+        <span class="item-valor">${numberToReal(valor)}</span>
+    </div>`;
+}
+
+function gerarRelatorioCenarios() {
+    const painel = document.getElementById("relatorioCenarios");
+    if (!painel) return;
+    const entrada = lerEntrada();
+    const hoje = folhaNoLimite(entrada, TETO_SP, TETO_SP);
+    const futuros = FUTUROS_COTA.map((futuro, indice) => {
+        const atual = folhaNoLimite(entrada, futuro.governador, futuro.governador);
+        const hibrido = folhaNoLimite(entrada, futuro.stf, futuro.governador);
+        const pleno = folhaNoLimite(entrada, futuro.stf, futuro.stf);
+        return { ...futuro, indice: indice + 1, atual, hibrido, pleno, perda: pleno.vencimentos - hibrido.vencimentos };
+    });
+    const anos = [];
+    let tetoProjetado = TETO_STF;
+    for (let ano = 2026; ano <= 2036; ano += 1) {
+        if (ano > 2026) tetoProjetado *= 1 + AUMENTO_MEDIO_DECADA;
+        const hibrido = folhaNoLimite(entrada, tetoProjetado, TETO_SP);
+        const pleno = folhaNoLimite(entrada, tetoProjetado, tetoProjetado);
+        anos.push({
+            ano,
+            teto: tetoProjetado,
+            cotaStf: pleno.valorCota,
+            hibrido: hibrido.vencimentos,
+            pleno: pleno.vencimentos,
+            perda: pleno.vencimentos - hibrido.vencimentos
+        });
+    }
+    const ultimo = anos[anos.length - 1];
+    const percentual = (AUMENTO_MEDIO_DECADA * 100).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const abaixoDoTeto = hoje.deducaoTeto < 0.01;
+    painel.classList.remove("d-none");
+    painel.innerHTML = `
+        <div class="secao fs-5 fw-bold text-primary mb-2 border-start border-primary border-4 ps-2 bg-light">Evolução do vencimento e a perda da cota</div>
+        <p class="text-muted">O cálculo usa o cargo, a função e os demais dados que você informou. Em cada futuro, a linha vermelha é o que se deixa de receber por mês se o teto for o do STF e a cota continuar a do governador.${abaixoDoTeto ? " Neste perfil o vencimento ainda não encosta no teto: subir só o teto não muda o salário, e a diferença vem da cota." : ""}</p>
+        <div class="cenario-grade">
+            ${futuros.map((futuro) => `
+                <article class="cenario-card">
+                    <header>
+                        <span>${futuro.indice}</span>
+                        <div>
+                            <strong>${futuro.nome}</strong>
+                            <small>${futuro.detalhe}</small>
+                        </div>
+                    </header>
+                    ${linhaCenario("+", "Como ficaria no governador", `cota ${numberToQuota(futuro.atual.valorCota)}`, futuro.atual.vencimentos, "")}
+                    ${linhaCenario("+", "Híbrido", `teto ${numberToReal(futuro.stf)} · cota do governador`, futuro.hibrido.vencimentos, "")}
+                    ${linhaCenario("=", "Cota reconhecida no STF", `cota ${numberToQuota(futuro.pleno.valorCota)}`, futuro.pleno.vencimentos, "fw-bold text-success")}
+                    ${linhaCenario("−", "Perda no mês", `${numberToReal(futuro.perda * 12)} no ano`, futuro.perda, "text-danger fw-bold")}
+                    <p class="cenario-hoje">${futuro.pleno.vencimentos - hoje.vencimentos >= 0 ? numberToReal(futuro.pleno.vencimentos - hoje.vencimentos) + " a mais" : numberToReal(hoje.vencimentos - futuro.pleno.vencimentos) + " a menos"} que o vencimento de hoje, se a cota for a do STF.</p>
+                </article>
+            `).join("")}
+        </div>
+        <div class="secao fs-5 fw-bold text-primary mt-4 mb-2 border-start border-primary border-4 ps-2 bg-light">Cota do governador e o aumento médio dos ministros</div>
+        <p class="text-muted">De 2016 a 2026 o subsídio dos ministros do STF passou de R$ 33.763,00 para R$ 46.366,19, uma média de ${percentual}% ao ano. A tabela aplica esse percentual a cada ano e mantém a cota presa ao governador de hoje (R$ 36.301,53).</p>
+        <div class="table-responsive">
+            <table class="table table-sm align-middle cenario-anos">
+                <thead>
+                    <tr>
+                        <th>Ano</th>
+                        <th class="text-end">Teto do STF</th>
+                        <th class="text-end">Cota se fosse a do STF</th>
+                        <th class="text-end">Vencimento com cota no STF</th>
+                        <th class="text-end">Vencimento com cota no governador</th>
+                        <th class="text-end">Perda no mês</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${anos.map((linha) => `
+                        <tr>
+                            <td>${linha.ano}</td>
+                            <td class="text-end">${numberToReal(linha.teto)}</td>
+                            <td class="text-end">${numberToQuota(linha.cotaStf)}</td>
+                            <td class="text-end text-success">${numberToReal(linha.pleno)}</td>
+                            <td class="text-end">${numberToReal(linha.hibrido)}</td>
+                            <td class="text-end text-danger fw-bold">${numberToReal(linha.perda)}</td>
+                        </tr>
+                    `).join("")}
+                </tbody>
+            </table>
+        </div>
+        <p class="cenario-fecho">Em 2036, deixar a cota no governador significa receber <strong>${numberToReal(ultimo.perda)}</strong> a menos por mês, ou <strong>${numberToReal(ultimo.perda * 12)}</strong> no ano.</p>
+        <button type="button" class="btn btn-outline-secondary btn-sm no-print" onclick="imprimirRelatorioCenarios()">Imprimir este relatório</button>
+    `;
+    painel.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function imprimirRelatorioCenarios() {
+    document.body.classList.add("imprimindo-relatorio");
+    window.print();
+    document.body.classList.remove("imprimindo-relatorio");
+}
+
 function valorZerado(valor) {
     return Math.abs(valor) < 0.005;
 }
