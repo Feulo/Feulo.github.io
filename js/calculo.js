@@ -88,7 +88,7 @@ const FAIXAS_RPPS = [
 const FAIXAS_RGPS = [
     { limite: SALARIO_MINIMO, aliquota: 0.11 },
     { limite: 4174.58, aliquota: 0.12 },
-    { limite: TETO_INSS, aliquota: 0.14 }
+    { limite: TETO_INSS, aliquota: 0.14 } 
 ];
 
 // Art. 16, § 4º, item 2, da LC 1.059/2008: 0,008334% do limite do art. 115, XII, da CE.
@@ -157,7 +157,7 @@ function calcularIRRF(baseIRRF) {
 function lerTetoEscolhido() {
     const tipoTeto = document.getElementById("tipoTeto").value;
     const cotaAcompanhaTeto = document.getElementById("cotaAcompanhaTeto").value !== "0";
-    let teto;
+    let teto; 
     if (tipoTeto === "stf") {
         teto = TETO_STF;
     } else if (tipoTeto === "informado") {
@@ -244,8 +244,8 @@ function lerEntrada() {
         dependentesIamspeIdadeSuperior: iamspeLigado ? Number(document.getElementById("dependentesIamspeIdadeSuperior").value) : 0,
         tempoServico: Number(document.getElementById("tempoServico").value),
         dependentesIRRF: dependentesIRRFElem ? Number(dependentesIRRFElem.value) : 0,
-        situacao: document.getElementById("situacao").value === "aposentado" ? "aposentado" : "ativo",
-        incorporacao: Math.max(0, Number(document.getElementById("incorporacao").value) || 0)
+        situacao: document.getElementById("situacao")?.value === "aposentado" ? "aposentado" : "ativo",
+        incorporacao: Math.max(0, Number(document.getElementById("incorporacao")?.value) || 0)
     };
 }
 
@@ -466,13 +466,302 @@ function gerarRelatorioCenarios() {
         <p class="cenario-fecho">Em 2036, deixar a cota no governador significa receber <strong>${numberToReal(ultimo.perda)}</strong> a menos por mês, ou <strong>${numberToReal(ultimo.perda * 12)}</strong> no ano.</p>
         <button type="button" class="btn btn-outline-secondary btn-sm no-print" onclick="imprimirRelatorioCenarios()">Imprimir este relatório</button>
     `;
-    painel.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function mostrarPerdaDaCota() {
+    mostrarQuadroPerdaCota();
+    gerarRelatorioCenarios();
+    const painel = document.getElementById("relatorioCenarios");
+    if (painel) painel.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 function imprimirRelatorioCenarios() {
     document.body.classList.add("imprimindo-relatorio");
     window.print();
     document.body.classList.remove("imprimindo-relatorio");
+}
+
+function projetarCenariosDaPessoa(entrada) {
+    const atual = [];
+    const stf = [];
+    let tetoProjetado = TETO_STF;
+    for (let ano = 2026; ano <= 2036; ano += 1) {
+        if (ano > 2026) tetoProjetado *= 1 + AUMENTO_MEDIO_DECADA;
+        const folhaAtual = folhaNoLimite(entrada, tetoProjetado, TETO_SP);
+        const folhaStf = folhaNoLimite(entrada, tetoProjetado, tetoProjetado);
+        atual.push({
+            ano,
+            valor: folhaAtual.vencimentos,
+            cota: folhaAtual.valorCota
+        });
+        stf.push({
+            ano,
+            valor: folhaStf.vencimentos,
+            cota: folhaStf.valorCota,
+            brutoExtra: folhaStf.valorBruto - folhaAtual.valorBruto,
+            vencExtra: folhaStf.vencimentos - folhaAtual.vencimentos
+        });
+    }
+    return { atual, stf };
+}
+
+function pisoDoEixo(minimo, topo) {
+    if (minimo <= 0 || topo <= minimo) return 0;
+    const folga = (topo - minimo) * 0.12;
+    const potencia = Math.pow(10, Math.max(0, Math.floor(Math.log10(topo)) - 1));
+    const piso = Math.floor(Math.max(0, minimo - folga) / potencia) * potencia;
+    return piso >= topo ? 0 : piso;
+}
+
+function topoDoEixo(maximo) {
+    if (maximo <= 0) return 1000;
+    const potencia = Math.pow(10, Math.floor(Math.log10(maximo)));
+    return [potencia, potencia * 2, potencia * 5, potencia * 10].find((valor) => valor >= maximo);
+}
+
+function rotuloEixo(valor) {
+    if (!Number.isFinite(valor)) return "";
+    if (Math.abs(valor) < 0.5) return "0";
+    if (valor % 1000 === 0) return `${(valor / 1000).toLocaleString("pt-BR")} mil`;
+    return numberToRealArredondado(valor).replace("R$", "").trim();
+}
+
+function desenharPerdaCota(series, topo, piso, largura, altura) {
+    const margem = { esquerda: 68, direita: 20, topo: 16, base: 28 };
+    const anos = series[0].pontos.map((ponto) => ponto.ano);
+    const plotW = Math.max(1, largura - margem.esquerda - margem.direita);
+    const plotH = Math.max(1, altura - margem.topo - margem.base);
+    const x = (indice) => margem.esquerda + (indice / (anos.length - 1)) * plotW;
+    const y = (valor) => margem.topo + (1 - (valor - piso) / (topo - piso)) * plotH;
+    const base = y(piso);
+    const linha = (pontos) => pontos.map((ponto, indice) => `${indice === 0 ? "M" : "L"}${x(indice).toFixed(1)},${y(ponto.valor).toFixed(1)}`).join(" ");
+    const faixaEntre = series.length > 1
+        ? `<path d="${linha(series[0].pontos)} ${[...series[1].pontos].reverse().map((ponto, indice) => `L${x(series[1].pontos.length - 1 - indice).toFixed(1)},${y(ponto.valor).toFixed(1)}`).join(" ")} Z" fill="#198754" fill-opacity="0.12"></path>`
+        : "";
+    const grades = [piso, (piso + topo) / 2, topo].map((valor) => `
+        <line x1="${margem.esquerda}" y1="${y(valor).toFixed(1)}" x2="${largura - margem.direita}" y2="${y(valor).toFixed(1)}" stroke="#e2e8f0" stroke-width="1"></line>
+        <text x="${margem.esquerda - 10}" y="${y(valor).toFixed(1)}" text-anchor="end" dominant-baseline="middle">${rotuloEixo(valor)}</text>
+    `).join("");
+    const desenhos = series.map((serie) => {
+        const traco = linha(serie.pontos);
+        const pontos = serie.pontos.map((ponto, indice) => `<circle class="quadro-perda-marco" data-indice="${indice}" cx="${x(indice).toFixed(1)}" cy="${y(ponto.valor).toFixed(1)}" r="4" fill="${serie.cor}"></circle>`).join("");
+        return `<path d="${traco}" fill="none" stroke="${serie.cor}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"></path>${pontos}`;
+    }).join("");
+    const passo = plotW / (anos.length - 1);
+    const pular = passo < 56 ? 2 : 1;
+    const eixoX = anos.map((ano, indice) => {
+        if (indice % pular !== 0 && indice !== anos.length - 1) return "";
+        return `<text x="${x(indice).toFixed(1)}" y="${altura - 8}" text-anchor="middle">${ano}</text>`;
+    }).join("");
+    const colunas = anos.map((_, indice) => {
+        const anterior = indice === 0 ? x(0) : (x(indice - 1) + x(indice)) / 2;
+        const proximo = indice === anos.length - 1 ? x(indice) : (x(indice) + x(indice + 1)) / 2;
+        return `<rect class="quadro-perda-coluna" data-indice="${indice}" x="${anterior.toFixed(1)}" y="${margem.topo}" width="${Math.max(0, proximo - anterior).toFixed(1)}" height="${plotH.toFixed(1)}" fill="transparent"></rect>`;
+    }).join("");
+    return `<svg class="quadro-perda-svg" viewBox="0 0 ${largura} ${altura}" role="group" tabindex="0" aria-label="Vencimento mensal de 2026 a 2036 no cenário atual e com teto e cota do STF. Use as setas para mudar o ano.">
+        ${grades}
+        ${faixaEntre}
+        ${desenhos}
+        <line id="quadroPerdaGuia" y1="${margem.topo}" y2="${base.toFixed(1)}" stroke="#64748b" stroke-opacity="0.7" stroke-dasharray="3 4"></line>
+        ${eixoX}
+        ${colunas}
+    </svg>`;
+}
+
+let observadorQuadroPerda = null;
+
+function ligarQuadroPerda(painel, series, topo, piso) {
+    const grafico = painel.querySelector(".quadro-perda-grafico");
+    const ano = painel.querySelector("#quadroPerdaAno");
+    const valores = [
+        painel.querySelector("#quadroPerdaValor0"),
+        painel.querySelector("#quadroPerdaValor1")
+    ];
+    const controle = painel.querySelector("#quadroPerdaRange");
+    const leitura = painel.querySelector("#quadroPerdaLeitura");
+    if (!grafico || !controle) return;
+    if (observadorQuadroPerda) observadorQuadroPerda.disconnect();
+
+    const svgAtual = () => grafico.querySelector(".quadro-perda-svg");
+    let ultimaLargura = 0;
+
+    const marcar = (indice) => {
+        const svg = svgAtual();
+        if (!svg) return;
+        const guia = svg.querySelector("#quadroPerdaGuia");
+        const marco = svg.querySelector(`.quadro-perda-marco[data-indice="${indice}"]`);
+        if (marco && guia) {
+            guia.setAttribute("x1", marco.getAttribute("cx"));
+            guia.setAttribute("x2", marco.getAttribute("cx"));
+        }
+        svg.querySelectorAll(".quadro-perda-marco").forEach((circulo) => {
+            const ativo = circulo.dataset.indice === String(indice);
+            circulo.setAttribute("r", ativo ? "6" : "4");
+            circulo.setAttribute("stroke", ativo ? "#fff" : "none");
+            circulo.setAttribute("stroke-width", ativo ? "2" : "0");
+        });
+    };
+
+    const escolher = (indice, anunciar) => {
+        const limite = series[0].pontos.length - 1;
+        const atual = Math.max(0, Math.min(limite, indice));
+        controle.value = String(atual);
+        const ponto = series[0].pontos[atual];
+        ano.textContent = String(ponto.ano);
+        controle.setAttribute("aria-valuetext", String(ponto.ano));
+        series.forEach((serie, serieIndice) => {
+            valores[serieIndice].textContent = numberToReal(serie.pontos[atual].valor);
+        });
+        marcar(atual);
+        if (anunciar && leitura) leitura.textContent = `${ponto.ano}: ${series.map((serie, serieIndice) => `${serie.nome} ${valores[serieIndice].textContent}`).join(", ")}`;
+    };
+
+    const desenhar = () => {
+        const largura = Math.round(grafico.clientWidth);
+        if (largura < 280 || largura === ultimaLargura) return;
+        ultimaLargura = largura;
+        const altura = largura < 640 ? 200 : 240;
+        grafico.innerHTML = desenharPerdaCota(series, topo, piso, largura, altura);
+        marcar(Number(controle.value) || 0);
+    };
+
+    const indiceDoPonteiro = (evento) => {
+        const svg = svgAtual();
+        if (!svg) return 0;
+        const alvo = evento.target.closest(".quadro-perda-coluna");
+        if (alvo) return Number(alvo.dataset.indice);
+        const caixa = svg.getBoundingClientRect();
+        const viewX = ((evento.clientX - caixa.left) / caixa.width) * svg.viewBox.baseVal.width;
+        let melhor = 0;
+        let distancia = Infinity;
+        svg.querySelectorAll(".quadro-perda-marco").forEach((circulo) => {
+            const delta = Math.abs(Number(circulo.getAttribute("cx")) - viewX);
+            if (delta < distancia) {
+                distancia = delta;
+                melhor = Number(circulo.dataset.indice);
+            }
+        });
+        return melhor;
+    };
+
+    grafico.addEventListener("pointermove", (evento) => {
+        if (evento.pointerType === "touch") return;
+        escolher(indiceDoPonteiro(evento), false);
+    });
+    grafico.addEventListener("pointerdown", (evento) => escolher(indiceDoPonteiro(evento), true));
+    grafico.addEventListener("keydown", (evento) => {
+        const atual = Number(controle.value);
+        if (evento.key === "ArrowRight" || evento.key === "ArrowUp") {
+            evento.preventDefault();
+            escolher(atual + 1, true);
+        } else if (evento.key === "ArrowLeft" || evento.key === "ArrowDown") {
+            evento.preventDefault();
+            escolher(atual - 1, true);
+        } else if (evento.key === "Home") {
+            evento.preventDefault();
+            escolher(0, true);
+        } else if (evento.key === "End") {
+            evento.preventDefault();
+            escolher(series[0].pontos.length - 1, true);
+        }
+    });
+    controle.addEventListener("input", () => escolher(Number(controle.value), true));
+    observadorQuadroPerda = new ResizeObserver(desenhar);
+    observadorQuadroPerda.observe(grafico);
+    desenhar();
+    escolher(0, false);
+}
+
+function mostrarQuadroPerdaCota() {
+    const painel = document.getElementById("quadroPerdaCota");
+    if (!painel) return;
+    const entrada = lerEntrada();
+    const { atual, stf } = projetarCenariosDaPessoa(entrada);
+    const cargoNome = document.getElementById("cargo").selectedOptions[0].text.trim();
+    const funcaoNome = document.getElementById("funcao").selectedOptions[0].text.trim();
+    const perfil = entrada.situacao === "aposentado" ? `${cargoNome}, aposentado` : `${cargoNome}, ${funcaoNome}`;
+    const percentual = (AUMENTO_MEDIO_DECADA * 100).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const maximo = Math.max(...atual.map((ponto) => ponto.valor), ...stf.map((ponto) => ponto.valor), 1);
+    const minimo = Math.min(...atual.map((ponto) => ponto.valor), ...stf.map((ponto) => ponto.valor));
+    const topo = topoDoEixo(maximo);
+    const piso = pisoDoEixo(minimo, topo);
+    const series = [
+        { nome: "Cenário atual", curto: "Cenário atual", cor: "#1e3a8a", pontos: atual },
+        { nome: "Teto e cota STF", curto: "Teto e cota STF", cor: "#198754", pontos: stf }
+    ];
+    const diferenca = (indice) => stf[indice].valor - atual[indice].valor;
+    const semFolga = atual.every((ponto, indice) => Math.abs(diferenca(indice)) < 0.5);
+    const linhasTabela = atual.map((ponto, indice) => `
+        <tr>
+            <th scope="row">${ponto.ano}</th>
+            <td>${numberToReal(ponto.valor)}</td>
+            <td>${numberToReal(stf[indice].valor)}</td>
+            <td>${numberToReal(diferenca(indice))}</td>
+        </tr>
+    `).join("");
+    painel.classList.remove("d-none");
+    painel.innerHTML = `
+        <div class="quadro-perda">
+            <div class="quadro-perda-kpis">
+                <article class="quadro-perda-kpi neutro">
+                    <div class="quadro-perda-valor">${numberToReal(atual[0].valor)}</div>
+                    <div class="quadro-perda-rotulo">Cenário atual em 2026</div>
+                </article>
+                <article class="quadro-perda-kpi sucesso">
+                    <div class="quadro-perda-valor">${numberToReal(stf[0].valor)}</div>
+                    <div class="quadro-perda-rotulo">Teto e cota STF em 2026</div>
+                </article>
+                <article class="quadro-perda-kpi perigo">
+                    <div class="quadro-perda-valor">${numberToReal(diferenca(0))}</div>
+                    <div class="quadro-perda-rotulo">Diferença em 2026</div>
+                </article>
+                <article class="quadro-perda-kpi perigo">
+                    <div class="quadro-perda-valor">${numberToReal(diferenca(atual.length - 1))}</div>
+                    <div class="quadro-perda-rotulo">Diferença em 2036</div>
+                </article>
+            </div>
+            <h2 class="quadro-perda-titulo">Cenário atual e teto com cota do STF</h2>
+            <p class="quadro-perda-sub">${perfil}. Teto do STF composto a ${percentual}% ao ano a partir de ${numberToReal(TETO_STF)}. No cenário atual a cota permanece a do governador, ${numberToQuota(atual[0].cota)}. No outro, teto e cota acompanham o STF.</p>
+            <div class="quadro-perda-leitura-box">
+                <div class="quadro-perda-ano" id="quadroPerdaAno">${atual[0].ano}</div>
+                <div class="quadro-perda-leitura-linhas">
+                    ${series.map((serie, indice) => `
+                        <div>
+                            <i class="quadro-perda-ponto" style="background:${serie.cor}"></i>
+                            <span>${serie.curto}</span>
+                            <strong id="quadroPerdaValor${indice}" class="${indice === 0 ? "neutro" : "sucesso"}">${numberToReal(serie.pontos[0].valor)}</strong>
+                        </div>
+                    `).join("")}
+                </div>
+            </div>
+            <p id="quadroPerdaLeitura" class="visually-hidden" aria-live="polite"></p>
+            <div class="quadro-perda-grafico"></div>
+            <label class="quadro-perda-controle">
+                <span>Ano</span>
+                <input id="quadroPerdaRange" type="range" min="0" max="${atual.length - 1}" value="0" step="1" aria-valuemin="2026" aria-valuemax="2036" aria-valuetext="2026">
+            </label>
+            ${semFolga ? `<p class="quadro-perda-nota">Neste perfil os dois cenários pagam o mesmo até 2036. O vencimento já chega ao teto, e a cota maior é cortada no mesmo valor.</p>` : ""}
+            <details class="quadro-perda-detalhe">
+                <summary>Ver os valores ano a ano</summary>
+                <div class="table-responsive">
+                    <table>
+                        <caption class="visually-hidden">Vencimento mensal no cenário atual e com teto e cota do STF</caption>
+                        <thead>
+                            <tr>
+                                <th scope="col">Ano</th>
+                                <th scope="col">Cenário atual</th>
+                                <th scope="col">Teto e cota STF</th>
+                                <th scope="col">Diferença</th>
+                            </tr>
+                        </thead>
+                        <tbody>${linhasTabela}</tbody>
+                    </table>
+                </div>
+            </details>
+            <p class="quadro-perda-fonte">Usa o cargo, a função e os demais dados informados. Passe o cursor no gráfico, arraste o ano ou use as setas.</p>
+        </div>
+    `;
+    ligarQuadroPerda(painel, series, topo, piso);
 }
 
 function valorZerado(valor) {
@@ -514,7 +803,8 @@ function calcSallary() {
     document.getElementById("6p").innerText = numberToReal(atual.sextaParte);
     mostrarLinha("linha6p", !valorZerado(atual.sextaParte));
 
-    document.getElementById("incorporacaoValor").innerText = numberToReal(atual.incorporacao);
+    const incorporacaoValor = document.getElementById("incorporacaoValor");
+    if (incorporacaoValor) incorporacaoValor.innerText = numberToReal(atual.incorporacao);
     mostrarLinha("linhaIncorporacao", !valorZerado(atual.incorporacao));
     const explicacaoPrevalencia = document.getElementById("explicacaoPrevalencia");
     if (explicacaoPrevalencia) {
