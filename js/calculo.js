@@ -243,7 +243,9 @@ function lerEntrada() {
         dependentesIamspeIdadeInferior: iamspeLigado ? Number(document.getElementById("dependentesIamspeIdadeInferior").value) : 0,
         dependentesIamspeIdadeSuperior: iamspeLigado ? Number(document.getElementById("dependentesIamspeIdadeSuperior").value) : 0,
         tempoServico: Number(document.getElementById("tempoServico").value),
-        dependentesIRRF: dependentesIRRFElem ? Number(dependentesIRRFElem.value) : 0
+        dependentesIRRF: dependentesIRRFElem ? Number(dependentesIRRFElem.value) : 0,
+        situacao: document.getElementById("situacao").value === "aposentado" ? "aposentado" : "ativo",
+        incorporacao: Math.max(0, Number(document.getElementById("incorporacao").value) || 0)
     };
 }
 
@@ -252,15 +254,23 @@ function montarFolha(entrada) {
     const valorCota = Math.min(limiteQuota, QUOTA_CALCULADA_PUBLICADA);
     const funcaoObj = FUNCOES.find(f => f.id === entrada.funcaoId);
 
+    const aposentado = entrada.situacao === "aposentado";
+    const referencia = aposentado ? FUNCOES.find(f => f.id === 39) : funcaoObj;
     const vb = VB_COTAS[entrada.cargo - 1] * valorCota;
-    const pl = funcaoObj.pl * valorCota;
-    const pp = funcaoObj.pp * valorCota;
-    const pr = entrada.participacao * funcaoObj.pr[entrada.cargo - 1] * entrada.icm * valorCota;
+    const ppCotas = referencia.pp;
+    const prCotas = referencia.pr[entrada.cargo - 1];
+    const plCalculado = aposentado ? 0 : funcaoObj.pl * valorCota;
+    const pp = ppCotas * valorCota;
+    const pr = entrada.participacao * prCotas * entrada.icm * valorCota;
+    const incorporacaoInformada = Math.max(0, Number(entrada.incorporacao) || 0);
+    const incorporacaoPrevalece = aposentado || incorporacaoInformada > plCalculado + 0.005;
+    const pl = incorporacaoPrevalece ? 0 : plCalculado;
+    const incorporacao = incorporacaoPrevalece ? incorporacaoInformada : 0;
     const aliquotaQq = Math.floor(entrada.tempoServico / 5) * 0.05;
-    const qq = (vb + pl + pp) * aliquotaQq;
+    const qq = (vb + pl + pp + incorporacao) * aliquotaQq;
     const aliquota6p = Math.floor(entrada.tempoServico / 20) * 1 / 6;
-    const sextaParte = (vb + pl + pp + qq) * aliquota6p;
-    const valorBruto = vb + pp + pl + sextaParte + qq + pr;
+    const sextaParte = (vb + pl + pp + incorporacao + qq) * aliquota6p;
+    const valorBruto = vb + pp + pl + sextaParte + qq + pr + incorporacao;
     const deducaoTeto = valorBruto > entrada.teto ? (valorBruto - entrada.teto) : 0;
     const baseParaPrevidencia = valorBruto - deducaoTeto;
     const faixas = entrada.regimePrevidenciario === "RPPS" ? FAIXAS_RPPS : FAIXAS_RGPS;
@@ -270,9 +280,9 @@ function montarFolha(entrada) {
     const valorAdicional = 6000 * 0.285 * valorCota;
     let auxilioTransporte = 0;
     let adicionalNaBaseIRRF = 0;
-    if (entrada.transporte === "nos") {
+    if (!aposentado && entrada.transporte === "nos") {
         auxilioTransporte = VALOR_NOS_CONFORMES;
-    } else if (entrada.transporte === "adicional" && funcaoObj.id === 39) {
+    } else if (!aposentado && entrada.transporte === "adicional" && funcaoObj.id === 39) {
         auxilioTransporte = valorAdicional;
         adicionalNaBaseIRRF = valorAdicional;
     }
@@ -296,7 +306,7 @@ function montarFolha(entrada) {
         descontoSaude = aliquotaIamspe * baseParaPrevidencia;
     }
     const remuneracaoLiquida = baseParaPrevidencia - valorPrevidenciaSocial - previdenciaComplementarValor - irrf - descontoSaude;
-    const vr = entrada.diasAlimentacao * VALOR_REFEICAO;
+    const vr = aposentado ? 0 : entrada.diasAlimentacao * VALOR_REFEICAO;
 
     return {
         funcaoObj,
@@ -304,12 +314,19 @@ function montarFolha(entrada) {
         limiteQuota,
         vb,
         pl,
+        plCalculado,
         pp,
+        ppCotas,
         pr,
+        prCotas,
         aliquotaQq,
         qq,
         aliquota6p,
         sextaParte,
+        incorporacao,
+        incorporacaoInformada,
+        incorporacaoPrevalece,
+        semFuncao: aposentado,
         valorBruto,
         deducaoTeto,
         valorPrevidenciaSocial,
@@ -480,9 +497,10 @@ function calcSallary() {
 
     document.getElementById("vbCotas").innerText = VB_COTAS[entrada.cargo - 1];
     document.getElementById("vb").innerText = numberToReal(atual.vb);
-    document.getElementById("ppCotas").innerText = atual.funcaoObj.pp;
+    document.getElementById("ppCotas").innerText = atual.ppCotas;
     document.getElementById("pp").innerText = numberToReal(atual.pp);
-    document.getElementById("nomeFuncaoPp").textContent = nomeFuncao;
+    document.getElementById("nomeFuncaoPp").textContent = atual.semFuncao ? "Fiscalização direta" : nomeFuncao;
+    mostrarLinha("linhaPp", !valorZerado(atual.pp));
     document.getElementById("plCotas").innerText = atual.funcaoObj.pl;
     document.getElementById("pl").innerText = numberToReal(atual.pl);
     document.getElementById("nomeFuncaoPl").textContent = nomeFuncao;
@@ -496,8 +514,18 @@ function calcSallary() {
     document.getElementById("6p").innerText = numberToReal(atual.sextaParte);
     mostrarLinha("linha6p", !valorZerado(atual.sextaParte));
 
-    document.getElementById("prCotas").innerText = atual.funcaoObj.pr[entrada.cargo - 1];
+    document.getElementById("incorporacaoValor").innerText = numberToReal(atual.incorporacao);
+    mostrarLinha("linhaIncorporacao", !valorZerado(atual.incorporacao));
+    const explicacaoPrevalencia = document.getElementById("explicacaoPrevalencia");
+    if (explicacaoPrevalencia) {
+        const texto = textoPrevalencia(atual);
+        explicacaoPrevalencia.textContent = texto;
+        explicacaoPrevalencia.classList.toggle("d-none", texto === "");
+    }
+
+    document.getElementById("prCotas").innerText = atual.prCotas;
     document.getElementById("pr").innerText = numberToReal(atual.pr);
+    mostrarLinha("linhaPr", !valorZerado(atual.pr));
     document.getElementById("remuneracaoBruta").innerText = numberToReal(atual.valorBruto);
 
     document.getElementById("valorTeto").innerText = numberToReal(entrada.teto);
@@ -536,7 +564,9 @@ function calcSallary() {
     document.getElementById("remuneracaoLiquida").innerHTML = numberToReal(atual.remuneracaoLiquida);
     document.getElementById("vr").innerHTML = numberToReal(atual.vr);
     document.getElementById("nc").innerHTML = numberToReal(atual.auxilioTransporte);
+    mostrarLinha("linhaRefeicao", !valorZerado(atual.vr));
     mostrarLinha("linhaTransporte", !valorZerado(atual.auxilioTransporte));
+    mostrarLinha("tituloIndenizatorias", !valorZerado(atual.vr) || !valorZerado(atual.auxilioTransporte));
 
     const labelAtin = document.getElementById("labelAtin");
     if (labelAtin) {
@@ -657,6 +687,49 @@ function preencherComparacao(entrada, normal) {
     painel.classList.remove("d-none");
 }
 
+function textoPrevalencia(folha) {
+    const proLabore = folha.plCalculado;
+    const incorporacao = folha.incorporacaoInformada;
+    if (folha.semFuncao) {
+        if (valorZerado(incorporacao)) {
+            return "O aposentado não recebe pro labore. O prêmio de produtividade e a participação nos resultados são os da fiscalização direta. A incorporação informada é R$ 0,00.";
+        }
+        return `O aposentado não recebe pro labore. A incorporação informada é ${numberToReal(incorporacao)}. O prêmio de produtividade e a participação nos resultados são os da fiscalização direta.`;
+    }
+    if (valorZerado(proLabore) && valorZerado(incorporacao)) return "";
+    if (folha.incorporacaoPrevalece) {
+        if (valorZerado(proLabore)) {
+            return `Prevaleceu a incorporação (${numberToReal(incorporacao)}) porque esta função não tem pro labore.`;
+        }
+        return `Prevaleceu a incorporação (${numberToReal(incorporacao)}) porque é maior que o pro labore da função (${numberToReal(proLabore)}).`;
+    }
+    if (valorZerado(incorporacao)) {
+        return `Prevaleceu o pro labore (${numberToReal(proLabore)}) porque a incorporação informada é ${numberToReal(0)}.`;
+    }
+    if (Math.abs(incorporacao - proLabore) <= 0.005) {
+        return `Pro labore e incorporação valem o mesmo (${numberToReal(proLabore)}). Prevaleceu o pro labore.`;
+    }
+    return `Prevaleceu o pro labore (${numberToReal(proLabore)}) porque é maior que a incorporação informada (${numberToReal(incorporacao)}).`;
+}
+
+function selecionarSituacao(situacao) {
+    const valor = situacao === "aposentado" ? "aposentado" : "ativo";
+    const campo = document.getElementById("situacao");
+    if (campo) campo.value = valor;
+    document.querySelectorAll(".situacao-btn").forEach((botao) => {
+        botao.setAttribute("aria-pressed", botao.dataset.situacao === valor ? "true" : "false");
+    });
+    const aposentado = valor === "aposentado";
+    const dias = document.getElementById("diasAlimentacao");
+    const transporte = document.getElementById("transporte");
+    const funcao = document.getElementById("funcao");
+    const aviso = document.getElementById("avisoAposentado");
+    if (dias) dias.disabled = aposentado;
+    if (transporte) transporte.disabled = aposentado;
+    if (funcao) funcao.disabled = aposentado;
+    if (aviso) aviso.classList.toggle("d-none", !aposentado);
+}
+
 function atualizarAjudaTransporte() {
     const ajuda = document.getElementById("ajudaTransporte");
     const transporte = document.getElementById("transporte");
@@ -738,6 +811,16 @@ document.addEventListener("DOMContentLoaded", () => {
         tipoTeto.addEventListener("change", atualizarTetoInformado);
         atualizarTetoInformado();
     }
+
+    document.querySelectorAll(".situacao-btn").forEach((botao) => {
+        botao.addEventListener("click", () => {
+            selecionarSituacao(botao.dataset.situacao);
+            calcSallary();
+        });
+    });
+    const incorporacao = document.getElementById("incorporacao");
+    if (incorporacao) incorporacao.addEventListener("input", () => calcSallary());
+    selecionarSituacao("ativo");
 
     const transporte = document.getElementById("transporte");
     const funcao = document.getElementById("funcao");

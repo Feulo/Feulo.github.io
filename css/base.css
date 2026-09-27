@@ -408,3 +408,40 @@ header nav a:hover {
     font-weight: 700;
     text-align: right;
 }
+
+.situacao-grupo {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+}
+
+.situacao-btn {
+    border: 1px solid var(--cor-borda);
+    background: #fff;
+    color: var(--cor-texto);
+    font-weight: 600;
+    border-radius: 6px;
+    padding: 0.55rem 0.75rem;
+}
+
+.situacao-btn[data-situacao="ativo"][aria-pressed="true"] {
+    background: #198754;
+    border-color: #198754;
+    color: #fff;
+}
+
+.situacao-btn[data-situacao="aposentado"][aria-pressed="true"] {
+    background: #0d6efd;
+    border-color: #0d6efd;
+    color: #fff;
+}
+
+.regra-prevalencia {
+    margin: 0.15rem 0 0.7rem;
+    padding: 0.55rem 0.75rem;
+    background: var(--cor-secundaria);
+    border-left: 4px solid var(--cor-primaria);
+    border-radius: 0 4px 4px 0;
+    color: var(--cor-texto);
+    font-size: 0.9rem;
+}
