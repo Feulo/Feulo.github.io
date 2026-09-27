@@ -1010,6 +1010,10 @@ function selecionarSituacao(situacao) {
         botao.setAttribute("aria-pressed", botao.dataset.situacao === valor ? "true" : "false");
     });
     const aposentado = valor === "aposentado";
+    const regime = document.getElementById("regimePrevidenciario");
+    const complementar = document.getElementById("previdenciaComplementar");
+    if (regime) regime.value = aposentado ? "RPPS" : "RGPS";
+    if (complementar) complementar.value = aposentado ? "0" : "7.5";
     const dias = document.getElementById("diasAlimentacao");
     const transporte = document.getElementById("transporte");
     const funcao = document.getElementById("funcao");
@@ -1111,6 +1115,15 @@ document.addEventListener("DOMContentLoaded", () => {
     const incorporacao = document.getElementById("incorporacao");
     if (incorporacao) incorporacao.addEventListener("input", () => calcSallary());
     selecionarSituacao("ativo");
+
+    const regime = document.getElementById("regimePrevidenciario");
+    const complementar = document.getElementById("previdenciaComplementar");
+    if (regime && complementar) {
+        regime.addEventListener("change", () => {
+            complementar.value = regime.value === "RPPS" ? "0" : "7.5";
+            calcSallary();
+        });
+    }
 
     const transporte = document.getElementById("transporte");
     const funcao = document.getElementById("funcao");
