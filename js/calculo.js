@@ -479,6 +479,25 @@ function mostrarPerdaDaCota() {
     if (painel) painel.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
+function atualizarPerdaDaCotaSeVisivel() {
+    const cenarios = document.getElementById("relatorioCenarios");
+    const quadro = document.getElementById("quadroPerdaCota");
+    const aberto = (cenarios && !cenarios.classList.contains("d-none"))
+        || (quadro && !quadro.classList.contains("d-none"));
+    if (!aberto) return;
+    const ano = Number(document.getElementById("quadroPerdaRange")?.value) || 0;
+    const tabelaAberta = Boolean(quadro?.querySelector("details")?.open);
+    mostrarQuadroPerdaCota();
+    gerarRelatorioCenarios();
+    const controle = document.getElementById("quadroPerdaRange");
+    if (controle && ano > 0) {
+        controle.value = String(ano);
+        controle.dispatchEvent(new Event("input"));
+    }
+    const detalhe = quadro?.querySelector("details");
+    if (detalhe && tabelaAberta) detalhe.open = true;
+}
+
 function imprimirRelatorioCenarios() {
     document.body.classList.add("imprimindo-relatorio");
     window.print();
@@ -902,6 +921,7 @@ function calcSallary() {
     }
 
     document.getElementById("rpps").innerText = numberToReal(atual.valorPrevidenciaSocial);
+    atualizarPerdaDaCotaSeVisivel();
 }
 
 function numberToRealArredondado(numero) {
