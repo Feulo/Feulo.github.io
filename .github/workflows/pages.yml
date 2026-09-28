@@ -25,18 +25,20 @@ jobs:
       - name: Aplicar senha da landing
         env:
           SITE_PASSWORD: ${{ secrets.SITE_PASSWORD }}
+          SITE_PASSWORD_ATUAL: ${{ secrets.SITE_PASSWORD_ATUAL }}
         run: |
           python3 - <<'PY'
-          import json, os, pathlib, re
+          import hashlib, json, os, pathlib, re
           path = pathlib.Path("js/site-config.js")
           texto = path.read_text()
 
           def aplicar(texto, campo, valor):
               if not valor:
                   return texto
+              digest = hashlib.md5(valor.encode("utf-8")).hexdigest()
               novo, trocas = re.subn(
                   rf'{campo}:\s*"(?:\\.|[^"\\])*"',
-                  f"{campo}: {json.dumps(valor)}",
+                  f"{campo}: {json.dumps(digest)}",
                   texto,
                   count=1,
               )
