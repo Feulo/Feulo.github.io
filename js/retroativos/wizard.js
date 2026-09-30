@@ -761,6 +761,15 @@
         });
         porId("validarPassoAPasso").addEventListener("change", atualizarAtalho);
         atualizarAtalho();
+        if (casoPadraoSelecionado() && !porId("validarPassoAPasso").checked) {
+            try {
+                prepararResultadoDireto();
+                mostrarPasso(6);
+            } catch (erro) {
+                mostrarPasso(1);
+                mostrarErro(erro.message || "Confira as informações antes de continuar.");
+            }
+        }
         porId("cargoRetro").addEventListener("change", filtrarFuncoesPorCargo);
         porId("exportarCsv").addEventListener("click", exportarCsv);
         porId("imprimirRelatorio").addEventListener("click", () => window.print());
