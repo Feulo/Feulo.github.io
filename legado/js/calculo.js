@@ -17,18 +17,18 @@ const FUNCOES = [
     { id: 3, pl: 2380, pp: 3595, pr: [0, 4152, 4278, 4404, 4530, 4656] }, // Subsecretário Adjunto
     { id: 4, pl: 2380, pp: 3595, pr: [0, 4066, 4190, 4313, 4437, 4560] }, // Corregedor-Geral
     { id: 5, pl: 2380, pp: 3595, pr: [0, 4152, 4278, 4404, 4530, 4656] }, // Diretor Geral
-    { id: 6, pl: 2380, pp: 3595, pr: [4026, 4152, 4278, 4404, 4530, 4656] }, // Assessor Fiscal Setorial VI
+    { id: 6, pl: 2380, pp: 3595, pr: [4150, 4280, 4410, 4540, 4670, 4800] }, // Assessor Fiscal Setorial VI
     { id: 7, pl: 2280, pp: 3585, pr: [0, 4126, 4252, 4378, 4504, 4630] }, // Diretor Geral Adjunto
-    { id: 8, pl: 2280, pp: 3585, pr: [3943, 4066, 4190, 4313, 4437, 4560] }, // Assessor Fiscal Setorial V
+    { id: 8, pl: 2280, pp: 3585, pr: [4026, 4152, 4278, 4404, 4530, 4656] }, // Assessor Fiscal Setorial V
     { id: 9, pl: 2280, pp: 3585, pr: [0, 3959, 4079, 4200, 4320, 4440] }, // Corregedor Adjunto
     { id: 10, pl: 2160, pp: 3570, pr: [0, 4066, 4190, 4313, 4437, 4560] }, // Diretor
-    { id: 11, pl: 2160, pp: 3570, pr: [3839, 3959, 4079, 4200, 4320, 4440] }, // Assessor Fiscal Setorial IV
+    { id: 11, pl: 2160, pp: 3570, pr: [3943, 4066, 4190, 4313, 4437, 4560] }, // Assessor Fiscal Setorial IV
     { id: 12, pl: 2160, pp: 3570, pr: [3943, 4066, 4190, 4313, 4437, 4560] }, // Presidente do TIT
     { id: 13, pl: 2160, pp: 3570, pr: [3839, 3959, 4079, 4200, 4320, 4440] }, // Assistente Fiscal Técnico Chefe
     { id: 14, pl: 2160, pp: 3570, pr: [3839, 3959, 4079, 4200, 4320, 4440] }, // Assistente Fiscal de Gab. do Secretário
     { id: 15, pl: 2160, pp: 3570, pr: [0, 3638, 3749, 3859, 3970, 4080] }, // Corregedor Fiscal
     { id: 16, pl: 2070, pp: 3480, pr: [0, 3959, 4079, 4200, 4320, 4440] }, // Diretor Adjunto
-    { id: 17, pl: 2070, pp: 3480, pr: [3735, 3852, 3969, 4086, 4203, 4320] }, // Assessor Fiscal Setorial III
+    { id: 17, pl: 2070, pp: 3480, pr: [3839, 3959, 4079, 4200, 4320, 4440] }, // Assessor Fiscal Setorial III
     { id: 18, pl: 2070, pp: 3480, pr: [3839, 3959, 4079, 4200, 4320, 4440] }, // Vice-Presidente do TIT
     { id: 19, pl: 2070, pp: 3480, pr: [0, 3852, 3969, 4086, 4203, 4320] }, // Delegado Tributário
     { id: 20, pl: 2070, pp: 3480, pr: [0, 3852, 3969, 4086, 4203, 4320] }, // Delegado Tributário de Julgamento
@@ -37,7 +37,7 @@ const FUNCOES = [
     { id: 23, pl: 1980, pp: 3450, pr: [3528, 3638, 3749, 3859, 3970, 4080] }, // Assistente Fiscal Chefe
     { id: 24, pl: 1980, pp: 3450, pr: [3528, 3638, 3749, 3859, 3970, 4080] }, // Consultor Tributário Chefe
     { id: 25, pl: 1980, pp: 3450, pr: [3528, 3638, 3749, 3859, 3970, 4080] }, // Supervisor Fiscal
-    { id: 26, pl: 1980, pp: 3450, pr: [3528, 3638, 3749, 3859, 3970, 4080] }, // Assessor Fiscal Setorial II
+    { id: 26, pl: 1980, pp: 3450, pr: [3735, 3852, 3969, 4086, 4203, 4320] }, // Assessor Fiscal Setorial II
     { id: 27, pl: 1980, pp: 3450, pr: [3528, 3638, 3749, 3859, 3970, 4080] }, // Rep. Fiscal Chefe de Assistência
     { id: 28, pl: 1980, pp: 3450, pr: [0, 3638, 3749, 3859, 3970, 4080] }, // Inspetor Fiscal
     { id: 29, pl: 1800, pp: 3375, pr: [3528, 3638, 3749, 3859, 3970, 4080] }, // Assessor Fiscal Setorial I
@@ -49,7 +49,7 @@ const FUNCOES = [
     { id: 35, pl: 1680, pp: 3300, pr: [3403, 3510, 3616, 3723, 3829, 3936] }, // Consultor Tributário
     { id: 36, pl: 1680, pp: 3300, pr: [3403, 3510, 3616, 3723, 3829, 3936] }, // Representante Fiscal
     { id: 37, pl: 1680, pp: 3300, pr: [3403, 3510, 3616, 3723, 3829, 3936] }, // Juiz com Dedicação Exclusiva
-    { id: 38, pl: 1680, pp: 3300, pr: [3403, 3510, 3616, 3723, 3829, 3936] }, // Julgador Fiscal
+    { id: 38, pl: 1680, pp: 3300, pr: [3279, 3381, 3484, 3587, 3689, 3792] }, // Julgador Fiscal
     { id: 39, pl: 0, pp: 2700, pr: [3279, 3381, 3484, 3587, 3689, 3792]}, // Fiscalização Direta de Tributos (Externo)
     
     // Novas Funções (Complementares das Tabelas de PR)
