@@ -30,7 +30,7 @@ const FUNCOES = [
     { id: 14, pl: 2160, pp: 3570, pr: [3839, 3959, 4079, 4200, 4320, 4440] }, // Assistente Fiscal de Gab. do Secretário
     { id: 15, pl: 2160, pp: 3570, pr: [0, 3638, 3749, 3859, 3970, 4080] }, // Corregedor Fiscal
     { id: 16, pl: 2070, pp: 3480, pr: [0, 3959, 4079, 4200, 4320, 4440] }, // Diretor Adjunto
-    { id: 17, pl: 2070, pp: 3480, pr: [3735, 3852, 3969, 4086, 4203, 4320] }, // Assessor Fiscal Setorial III
+    { id: 17, pl: 2070, pp: 3480, pr: [3839, 3959, 4079, 4200, 4320, 4440] }, // Assessor Fiscal Setorial III
     { id: 18, pl: 2070, pp: 3480, pr: [3839, 3959, 4079, 4200, 4320, 4440] }, // Vice-Presidente do TIT
     { id: 19, pl: 2070, pp: 3480, pr: [0, 3852, 3969, 4086, 4203, 4320] }, // Delegado Tributário
     { id: 20, pl: 2070, pp: 3480, pr: [0, 3852, 3969, 4086, 4203, 4320] }, // Delegado Tributário de Julgamento
