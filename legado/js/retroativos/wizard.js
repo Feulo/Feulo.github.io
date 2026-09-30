@@ -26,9 +26,9 @@
     const GRUPOS_FUNCOES = [
         { nome: "Fiscalização Direta (Sem Função)", ids: [39] },
         { nome: "Interno - TI", ids: [57] },
-        { nome: "Direção e Chefia", ids: [1, 3, 5, 7, 10, 16, 19, 30, 40, 42, 43, 44, 46] },
-        { nome: "Assessoria", ids: [2, 6, 8, 11, 17, 26, 29, 41, 45, 47, 49, 51, 52, 53] },
-        { nome: "Assistência", ids: [13, 14, 22, 23, 31, 34, 50, 54, 55, 56] },
+        { nome: "Direção e Chefia", ids: [1, 3, 5, 7, 10, 16, 19, 30, 43, 44] },
+        { nome: "Assessoria", ids: [2, 6, 8, 11, 17, 26, 29, 45, 47, 51] },
+        { nome: "Assistência", ids: [13, 14, 22, 23, 31, 34] },
         { nome: "Consultoria", ids: [24, 32, 35, 48] },
         { nome: "Corregedoria", ids: [4, 9, 15] },
         { nome: "Fiscalização (Chefia)", ids: [25, 28] },
@@ -37,7 +37,7 @@
     ];
 
     const FUNCOES_RESTRITAS_AFR_I = new Set([
-        1, 3, 4, 5, 7, 9, 10, 15, 16, 19, 20, 21, 28, 40, 42, 43, 44, 46
+        1, 3, 4, 5, 7, 9, 10, 15, 16, 19, 20, 21, 28, 43, 44
     ]);
 
     const VERBAS_PADRAO = [
