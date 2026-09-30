@@ -101,7 +101,7 @@
         const config = window.SITE_CONFIG || {};
         const hash = md5(senha || "");
         if (senha && hash === config.senhaAtual) return "atual";
-        if (senha && (hash === config.senhaLegado || hash === "01c860da53e2e7ebd2ae0b30b62eb762")) return "legado";
+        if (senha && (hash === config.senhaLegado || hash === "bbd6a62a8a291b19a802e4ad64547fff")) return "legado";
         return "";
     }
 
