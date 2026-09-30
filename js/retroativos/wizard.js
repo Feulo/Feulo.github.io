@@ -182,6 +182,7 @@
             porId("resumoRubricasCaso").classList.add("d-none");
             porId("descricaoCasoPadrao").textContent =
                 "Escolher TI ou GT preenche período, função, o que já foi pago e o que ficou faltando.";
+            atualizarAtalho();
             return;
         }
 
@@ -211,6 +212,7 @@
             ? "Caso TI aplicado com função Assistente Fiscal. Agosto recebeu só VB. Setembro recebeu VB + ATIN líquido. Devidos: PP e pró-labore em ago/set. ATIN só a partir de setembro."
             : "Caso GT aplicado, sem função. Agosto recebeu só VB. A produtividade de agosto entra na folha de setembro, que está correta. ATIN só a partir de setembro.";
         porId("resumoRubricasCaso").classList.remove("d-none");
+        atualizarAtalho();
 
         const uniao = new Set(Object.values(estado.rubricasRecebidasPorCompetencia).flat());
         RUBRICAS.forEach((rubrica) => {
@@ -632,13 +634,51 @@
         });
         porId("voltar").classList.toggle("d-none", estado.passo === 1);
         porId("avancar").classList.toggle("d-none", estado.passo === 6);
-        porId("avancar").textContent = estado.passo === 5 ? "Calcular resultado" : "Continuar";
+        porId("avancar").textContent = textoAvancar();
         window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function casoPadraoSelecionado() {
+        const valor = document.querySelector("input[name='casoPadrao']:checked")?.value;
+        return valor && valor !== "personalizado";
+    }
+
+    function atualizarAtalho() {
+        const grupo = porId("grupoValidarPasso");
+        if (grupo) grupo.classList.toggle("d-none", !casoPadraoSelecionado());
+        const avancar = porId("avancar");
+        if (avancar && estado.passo !== 6) avancar.textContent = textoAvancar();
+    }
+
+    function textoAvancar() {
+        if (estado.passo === 5) return "Calcular resultado";
+        const check = porId("validarPassoAPasso");
+        if (estado.passo === 1 && casoPadraoSelecionado() && check && !check.checked) return "Ver resultado";
+        return "Continuar";
+    }
+
+    function prepararResultadoDireto() {
+        const origem = estado.passo;
+        try {
+            for (let passo = 1; passo <= 5; passo += 1) {
+                estado.passo = passo;
+                validarPasso();
+            }
+        } catch (erro) {
+            estado.passo = origem;
+            throw erro;
+        }
     }
 
     function avancar() {
         limparErro();
         try {
+            const check = porId("validarPassoAPasso");
+            if (estado.passo === 1 && casoPadraoSelecionado() && check && !check.checked) {
+                prepararResultadoDireto();
+                mostrarPasso(6);
+                return;
+            }
             validarPasso();
             mostrarPasso(estado.passo + 1);
         } catch (erro) {
@@ -719,6 +759,8 @@
         document.querySelectorAll("input[name='casoPadrao']").forEach((opcao) => {
             opcao.addEventListener("change", (evento) => aplicarCasoPadrao(evento.target.value));
         });
+        porId("validarPassoAPasso").addEventListener("change", atualizarAtalho);
+        atualizarAtalho();
         porId("cargoRetro").addEventListener("change", filtrarFuncoesPorCargo);
         porId("exportarCsv").addEventListener("click", exportarCsv);
         porId("imprimirRelatorio").addEventListener("click", () => window.print());
