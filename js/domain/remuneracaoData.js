@@ -164,8 +164,9 @@
         const pr = funcao.pr[cargo - 1] * cota * ((Number(perfil.icm) || 0) / 100);
         const ufesp = ufespNaCompetencia(competencia);
         const atin = ufesp ? 300 * ufesp.valor : 0;
+        const adicionalTransporte = funcao.id === 39 ? 1710 * cota : 0;
 
-        return { vb, pp, pl, quinquenio, sextaParte, pr, atin };
+        return { vb, pp, pl, quinquenio, sextaParte, pr, atin, adicionalTransporte };
     }
 
     return {

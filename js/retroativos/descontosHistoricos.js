@@ -61,7 +61,12 @@
                 [0.11, 0.12, 0.14, 0.16]
             );
         }
-        return calcularProgressivo(baseCentavos, tabela.faixas, [0.075, 0.09, 0.12, 0.14]);
+        // RPPS pós-reforma (LC 1.354/2020, art. 8º, I a III): para no teto do RGPS.
+        return calcularProgressivo(
+            baseCentavos,
+            [tabela.minimo, tabela.limiteRpps2, tabela.faixas[3]],
+            [0.11, 0.12, 0.14]
+        );
     }
 
     function calcularComplementar(competencia, baseCentavos, percentual) {

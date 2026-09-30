@@ -122,6 +122,40 @@ test("deriva a cota do teto da competência", () => {
     assert.equal(Math.round(Data.valorCota("2027-01") * 10000), 30253);
 });
 
+test("o pós-reforma usa a LC 1.354/2020 até o teto do RGPS", () => {
+    const tabela = Descontos.PREVIDENCIA.find((item) => item.inicio === "2026-01");
+    const opcoes = { regime: "teto-rgps", dependentesIR: 0, complementarAtiva: false };
+    const noTeto = Descontos.calcularDescontos("2026-06", Core.paraCentavos(tabela.faixas[3]), opcoes);
+    const faixa1 = Math.round(tabela.minimo * 100 * 0.11);
+    const faixa2 = Math.round((Core.paraCentavos(tabela.limiteRpps2) - Core.paraCentavos(tabela.minimo)) * 0.12);
+    const faixa3 = Math.round((Core.paraCentavos(tabela.faixas[3]) - Core.paraCentavos(tabela.limiteRpps2)) * 0.14);
+    assert.equal(noTeto.previdenciaCentavos, faixa1 + faixa2 + faixa3);
+});
+
+test("o adicional de transporte é indenizatório e só existe na fiscalização direta", () => {
+    const direta = Data.calcularRubricasPerfil({ cargo: 1, funcaoId: 39, icm: 0 }, "2026-06");
+    const assistente = Data.calcularRubricasPerfil({ cargo: 1, funcaoId: 57, icm: 0 }, "2026-06");
+    assert.equal(Math.round(direta.adicionalTransporte * 100), Math.round(1710 * Data.valorCota("2026-06") * 100));
+    assert.equal(assistente.adicionalTransporte, 0);
+
+    const adicional = Core.paraCentavos(direta.adicionalTransporte);
+    const resultado = Core.calcularCompetencia({
+        tetoCentavos: Core.paraCentavos(36301.53),
+        rubricasRecebidas: [{
+            id: "adicionalTransporte",
+            nome: "Adicional de transporte",
+            valorCentavos: adicional,
+            sujeitaTeto: false,
+            tributavel: false,
+            liquida: true
+        }],
+        verbasDevidas: [],
+        reflexosJudiciais: []
+    });
+    assert.equal(resultado.baseTributavelOriginalCentavos, 0);
+    assert.equal(resultado.liquidasRecebidasCentavos, adicional);
+});
+
 test("calcula ATIN em 300 UFESPs pela competência", () => {
     assert.equal(Data.calcularRubricasPerfil({ cargo: 1, funcaoId: 39, icm: 0 }, "2025-06").atin, 11106);
     assert.equal(Data.calcularRubricasPerfil({ cargo: 1, funcaoId: 39, icm: 0 }, "2026-06").atin, 11526);

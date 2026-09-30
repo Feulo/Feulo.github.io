@@ -20,6 +20,14 @@
             tributavel: false,
             liquida: true,
             proporcional: false
+        },
+        {
+            id: "adicionalTransporte",
+            nome: "Adicional de transporte — indenizatório (1.710 cotas)",
+            sujeitaTeto: false,
+            tributavel: false,
+            liquida: true,
+            proporcional: false
         }
     ];
 
@@ -225,7 +233,7 @@
                 <label class="form-label small" for="${prefixo}-valor">Valor mensal cheio</label>
                 <input class="form-control" id="${prefixo}-valor" type="number" min="0" step="0.01" value="${verba.valor || ""}">
             </div>
-        ` : `<div class="col-md-5"><strong>${escapar(verba.nome)}</strong><div class="form-text">${verba.id === "atin" ? "Líquido, extra teto e devido só no mês seguinte ao ingresso. 300 UFESPs do mês, sem IR nem previdência." : verba.id === "pp" ? "No GT sem função, a produtividade do mês é paga na competência seguinte." : "Valor calculado em cotas."}</div></div>`;
+        ` : `<div class="col-md-5"><strong>${escapar(verba.nome)}</strong><div class="form-text">${verba.id === "atin" ? "Líquido, extra teto e devido só no mês seguinte ao ingresso. 300 UFESPs do mês, sem IR nem previdência." : verba.id === "adicionalTransporte" ? "Só na fiscalização direta. Parcela indenizatória: o sindicato ajuizou ação no passado e ela não entra no teto, na previdência nem no IRRF." : verba.id === "pp" ? "No GT sem função, a produtividade do mês é paga na competência seguinte." : "Valor calculado em cotas."}</div></div>`;
 
         return `
             <div class="due-card" data-verba="${prefixo}">
@@ -342,11 +350,19 @@
         }, 0);
     }
 
-    function atinRecebido(competencia) {
+    function indenizatoriaRecebida(competencia, id) {
         const valores = valoresPerfil(competencia);
-        return rubricasRecebidasSelecionadas(competencia).includes("atin")
-            ? valores.atin.valorCentavos
-            : 0;
+        if (!rubricasRecebidasSelecionadas(competencia).includes(id)) return 0;
+        return valores[id]?.valorCentavos || 0;
+    }
+
+    function textoIndenizatorias(competencia) {
+        const itens = [
+            ["ATIN", indenizatoriaRecebida(competencia, "atin")],
+            ["Adicional de transporte", indenizatoriaRecebida(competencia, "adicionalTransporte")]
+        ].filter(([, valor]) => valor > 0);
+        if (!itens.length) return "—";
+        return itens.map(([nome, valor]) => `${moeda(valor)}<div class="text-muted">${nome}, líquido extra teto</div>`).join("");
     }
 
     function salvarConferencia() {
@@ -373,13 +389,13 @@
             const dias = override?.diasTrabalhados ?? item.diasTrabalhados;
             const bruto = override?.brutoRecebidoCentavos ?? remuneracaoSujeitaTetoRecebida(item.competencia, dias);
             const teto = override?.tetoCentavos ?? Core.paraCentavos(tetoInfo.valor);
-            const atin = atinRecebido(item.competencia);
+            const indenizatorias = textoIndenizatorias(item.competencia);
             return `
                 <tr>
                     <td><strong>${item.competencia.slice(5)}/${item.competencia.slice(0, 4)}</strong>${dias < 30 ? `<br><small class="text-muted">Parcial</small>` : ""}</td>
                     <td><input class="form-control form-control-sm" id="dias-${item.competencia}" aria-label="Dias trabalhados em ${item.competencia}" type="number" min="1" max="30" value="${dias}"></td>
                     <td><input class="form-control form-control-sm text-end" id="bruto-${item.competencia}" aria-label="Remuneração sujeita a teto em ${item.competencia}" type="number" min="0" step="0.01" value="${numero(bruto)}"></td>
-                    <td class="text-end small">${atin ? `${moeda(atin)}<div class="text-muted">líquido extra teto</div>` : "—"}</td>
+                    <td class="text-end small">${indenizatorias}</td>
                     <td><input class="form-control form-control-sm text-end" id="teto-${item.competencia}" aria-label="Teto vigente em ${item.competencia}" type="number" min="0.01" step="0.01" value="${numero(teto)}"></td>
                     <td><a href="${tetoInfo.fonte}" target="_blank" rel="noopener" title="${escapar(tetoInfo.norma)}">Ver norma</a></td>
                 </tr>`;
@@ -431,7 +447,7 @@
         };
     }
 
-    const ORDEM_FOLHA = ["vb", "pp", "pl", "quinquenio", "sextaParte", "pr", "atin", "override-bruto"];
+    const ORDEM_FOLHA = ["vb", "pp", "pl", "quinquenio", "sextaParte", "pr", "atin", "adicionalTransporte", "override-bruto"];
 
     function ordenarFolha(itens) {
         return [...itens].sort((a, b) => {

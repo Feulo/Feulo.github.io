@@ -18,6 +18,11 @@
     margin: 0;
 }
 
+header nav a,
+header nav > span {
+    white-space: nowrap;
+}
+
 /* Cabeçalhos de Seção (Ex: Vencimentos, Deduções) */
 .secao {
     font-size: 1.15rem;

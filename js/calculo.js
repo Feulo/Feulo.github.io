@@ -283,15 +283,13 @@ function montarFolha(entrada) {
 
     const valorAdicional = 6000 * 0.285 * valorCota;
     let auxilioTransporte = 0;
-    let adicionalNaBaseIRRF = 0;
     if (!aposentado && entrada.transporte === "nos") {
         auxilioTransporte = VALOR_NOS_CONFORMES;
     } else if (!aposentado && entrada.transporte === "adicional" && funcaoObj.id === 39) {
         auxilioTransporte = valorAdicional;
-        adicionalNaBaseIRRF = valorAdicional;
     }
 
-    const baseIRRF = baseParaPrevidencia + adicionalNaBaseIRRF - valorPrevidenciaSocial - previdenciaComplementarValor - (entrada.dependentesIRRF * 189.59);
+    const baseIRRF = baseParaPrevidencia - valorPrevidenciaSocial - previdenciaComplementarValor - (entrada.dependentesIRRF * 189.59);
     const irrf = calcularIRRF(baseIRRF);
     let decimosSaude = 0;
     let descontoSaude = 0;
@@ -886,7 +884,7 @@ function calcSallary() {
         if (entrada.transporte === "nos") {
             labelAtin.innerHTML = `<span>(+) Nos Conformes</span> <span class="item-cotas">(300 UFESPs<sup><a href="#nota7">7</a></sup>)</span>`;
         } else {
-            labelAtin.innerHTML = `<span>(+) Adicional de Transporte</span> <span class="item-cotas">(1710 cotas<sup><a href="#nota6">6</a></sup>)</span>`;
+            labelAtin.innerHTML = `<span>(+) Adicional de Transporte<sup><a href="#nota9">9</a></sup></span> <span class="item-cotas">(1710 cotas<sup><a href="#nota6">6</a></sup>)</span>`;
         }
     }
     document.getElementById("vencimentos").innerHTML = numberToReal(atual.vencimentos);
@@ -1059,7 +1057,7 @@ function atualizarAjudaTransporte() {
     if (transporte.value === "nos") {
         ajuda.textContent = "Indenizatório. Não entra no imposto de renda.";
     } else if (transporte.value === "adicional" && fiscalizacaoDireta) {
-        ajuda.textContent = "Entra na base do imposto de renda. São 1.710 cotas na fiscalização direta.";
+        ajuda.textContent = "Indenizatório. Não entra no imposto de renda. São 1.710 cotas na fiscalização direta.";
     } else if (transporte.value === "adicional") {
         ajuda.textContent = "O adicional de transporte é pago na fiscalização direta. Nesta função o valor fica zerado.";
     } else {
