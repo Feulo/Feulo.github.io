@@ -1189,8 +1189,6 @@ document.addEventListener("DOMContentLoaded", () => {
     nav.innerHTML = `
         <span class="text-warning">Remuneração</span>
         <span class="text-white-50 mx-3">|</span>
-        <a class="text-white text-decoration-none" href="./retroativos.html">Retroativos (abate teto)</a>
-        <span class="text-white-50 mx-3">|</span>
-        <a class="text-white text-decoration-none" href="./comparacao.html">Interno e externo</a>`;
+        <a class="text-white text-decoration-none" href="./retroativos.html">Retroativos (abate teto)</a>`;
     header.appendChild(nav);
 });
