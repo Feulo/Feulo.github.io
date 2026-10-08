@@ -203,14 +203,16 @@
                     <select id="tipoTeto" class="form-select">
                         <option value="sp">Subsídio do Governador de SP</option>
                         <option value="stf">Subsídio do ministro do STF</option>
+                        <option value="hibrido">Híbrido — teto do STF e cota do desembargador</option>
                         <option value="informado">Teto informado</option>
                     </select>
+                    <p id="ajudaHibrido" class="form-text d-none">O abate-teto usa o subsídio do ministro do STF (R$ 46.366,19). A cota fica limitada pelo subsídio do desembargador (R$ 41.845,49, que é 90,25% do STF).</p>
                 </div>
                 <div class="form-group mb-2 d-none" id="grupoTetoInformado">
                     <label for="tetoInformado" class="form-label mb-1">Valor do teto (R$)</label>
                     <input type="number" id="tetoInformado" class="form-control" min="0" step="0.01" value="36301.53">
                 </div>
-                <div class="form-group mb-2">
+                <div class="form-group mb-2" id="grupoCotaAcompanha">
                     <label for="cotaAcompanhaTeto" class="form-label mb-1">A cota acompanha este teto?</label>
                     <select id="cotaAcompanhaTeto" class="form-select">
                         <option value="0">Não — cota limitada pelo subsídio do Governador</option>
@@ -481,6 +483,14 @@
                                 <td id="cmp-cota-governador-venc" class="text-end text-primary fw-bold"></td>
                                 <td id="cmp-cota-governador-diff" class="text-end"></td>
                             </tr>
+                            <tr data-cenario="cota-desembargador" class="d-none">
+                                <td id="cmp-cota-desembargador-nome">Teto STF e Cota desembargador</td>
+                                <td id="cmp-cota-desembargador-cota" class="text-end cmp-cota"></td>
+                                <td id="cmp-cota-desembargador-teto" class="text-end"></td>
+                                <td id="cmp-cota-desembargador-abate" class="text-end text-danger"></td>
+                                <td id="cmp-cota-desembargador-venc" class="text-end text-primary fw-bold"></td>
+                                <td id="cmp-cota-desembargador-diff" class="text-end"></td>
+                            </tr>
                             <tr data-cenario="cota-teto">
                                 <td id="cmp-cota-teto-nome">Teto e cota STF</td>
                                 <td id="cmp-cota-teto-cota" class="text-end cmp-cota"></td>
@@ -502,7 +512,7 @@
             <div class="secao fs-5 fw-bold text-secondary mb-3">Notas</div>
             <div id="nota1" class="small mb-1 text-muted"><sup>1</sup> Vencimento base: <a href="https://www.imprensaoficial.com.br/DO/BuscaDO2001Documento_11_4.aspx?link=/2010/executivo%2520secao%2520i/abril/09/pag_0021_4G2DQE6D32FIAe1QPVDLL5CRH56.pdf&pagina=21&data=09/04/2010&caderno=Executivo%20I&paginaordenacao=100021" target="_blank" rel="noopener" class="text-decoration-none">Resolução SF 33, de 08/04/2010</a>. Pró-labore, prêmio e denominação das funções: <a href="http://www.afiscom.com.br/site/Produto/resf1322.htm" target="_blank" rel="noopener" class="text-decoration-none">Resolução SFP 13, de 23/03/2022</a>, com o anexo na redação da <a href="http://www.afiscom.com.br/site/Produto/resf2624.htm" target="_blank" rel="noopener" class="text-decoration-none">Resolução SFP 26, de 09/08/2024</a>. A <a href="https://www.doe.sp.gov.br/executivo/secretaria-da-fazenda-e-planejamento/resolucao-sfp-24-de-12-08-2026-20260813112812202049524" target="_blank" rel="noopener" class="text-decoration-none">Resolução SFP 24, de 12/08/2026</a>, lê Delegado Tributário onde constava Delegado Regional Tributário. O prêmio da fiscalização direta, de 2.700 cotas, é o limite de 75% do art. 17, § 1º, da <a href="https://www.al.sp.gov.br/repositorio/legislacao/lei.complementar/2008/lei.complementar-1059-18.09.2008.html" target="_blank" rel="noopener" class="text-decoration-none">LC 1.059/2008</a>, reproduzido na <a href="http://www.afiscom.com.br/site/Produto/resf5015.htm" target="_blank" rel="noopener" class="text-decoration-none">Resolução SF 50, de 18/08/2015</a>. Participação nos resultados: <a href="http://www.afiscom.com.br/site/Produto/resf0420.htm" target="_blank" rel="noopener" class="text-decoration-none">Resolução SFP 04, de 20/01/2020</a>.</div>
             <div id="nota2" class="small mb-1 text-muted"><sup>2</sup> Participação nos resultados foi linearizada para o pagamento em 3 meses respeitando o teto</div>
-            <div id="nota3" class="small mb-1 text-muted"><sup>3</sup> O abate-teto usa o limite escolhido. A cota só muda junto com esse limite quando a opção “a cota acompanha este teto” está em sim. O limite da cota é 0,008334% do teto de referência, truncado em 4 casas, e não o teto dividido por 12.000.</div>
+            <div id="nota3" class="small mb-1 text-muted"><sup>3</sup> O abate-teto usa o limite escolhido. A cota só muda junto com esse limite quando a opção “a cota acompanha este teto” está em sim. No híbrido, o abate usa o subsídio do ministro do STF e a cota fica limitada pelo subsídio do desembargador (R$ 41.845,49). O limite da cota é 0,008334% do teto de referência, truncado em 4 casas, e não o teto dividido por 12.000.</div>
             <div id="nota4" class="small mb-1 text-muted"><sup>4</sup> <a href="https://www.al.sp.gov.br/repositorio/legislacao/lei.complementar/2020/lei.complementar-1354-06.03.2020.html" class="text-decoration-none">LC 1.354/2020</a>, art. 8º: no RPPS pós-reforma, 11% até R$ 1.621,00, 12% até R$ 4.174,58 e 14% até o teto do RGPS (R$ 8.475,55). A faixa de 16% acima desse teto vale para o RPPS pré-reforma do servidor ativo (<a href="https://portal.fazenda.sp.gov.br/servicos/folha/Paginas/Contribuicao_Previdenciaria_Servidores_Ativos.aspx" class="text-decoration-none">tabela de 2026</a>). No aposentado, a contribuição é 16% apenas sobre a parcela que ultrapassa o teto do INSS (R$ 8.475,55).</div>
             <div id="nota5" class="small mb-1 text-muted"><sup>5</sup> AMAFRESP: cotas da faixa etária vezes o valor da cota. Em setembro de 2026 a cota é R$ 930,00 (<a href="https://amafresp.org.br/tabela-de-contribuicao/" target="_blank" rel="noopener" class="text-decoration-none">tabela AMAFRESP</a>). Com 10 anos no plano, o desconto é de 1 cota dos 59 aos 63 anos e de 0,5 cota dos 64 aos 69. IAMSPE: soma das alíquotas sobre o rendimento bruto limitado ao teto. Os dois são desconto do líquido e não entram na base do IRRF.</div>
             <div id="nota6" class="small mb-1 text-muted"><sup>6</sup> Cota de pagamento em setembro de 2026: R$ 3,0253, que é 0,008334% de R$ 36.301,53 truncado em 4 casas.</div>
@@ -539,7 +549,7 @@
     <script src="https://cdn.jsdelivr.net/npm/popper.js@1.12.9/dist/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
     <script src="./shared/js/calculo.js"></script>
-    <script src="./js/calculo.js?v=20260928a"></script>
+    <script src="./js/calculo.js?v=20261008a"></script>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {

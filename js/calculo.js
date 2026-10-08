@@ -3,6 +3,8 @@ const VALOR_UFESP = 38.42;
 const VALOR_REFEICAO = 55;
 const TETO_SP = 36301.53;
 const TETO_STF = 46366.19;
+// Subsídio de desembargador: 90,25% do STF. Cartilha CNJ, ago/2026: R$ 41.845,49.
+const TETO_DESEMBARGADOR = 41845.49;
 const TETO_INSS = 8475.55;
 // Última quota calculada cuja tabela foi lida por inteiro: competência jul/2025,
 // Portaria DGEP 03, de 30/03/2026, competência fevereiro/2026.
@@ -157,6 +159,9 @@ function calcularIRRF(baseIRRF) {
 function lerTetoEscolhido() {
     const tipoTeto = document.getElementById("tipoTeto").value;
     const cotaAcompanhaTeto = document.getElementById("cotaAcompanhaTeto").value !== "0";
+    if (tipoTeto === "hibrido") {
+        return { teto: TETO_STF, tetoDaCota: TETO_DESEMBARGADOR };
+    }
     let teto; 
     if (tipoTeto === "stf") {
         teto = TETO_STF;
@@ -944,8 +949,8 @@ let tetoEmComparacao = null;
 
 function atualizarTetoEmComparacao() {
     const tipo = document.getElementById("tipoTeto").value;
-    if (tipo === "stf") {
-        tetoEmComparacao = { tipo: "stf", valor: TETO_STF };
+    if (tipo === "stf" || tipo === "hibrido") {
+        tetoEmComparacao = { tipo, valor: TETO_STF };
     } else if (tipo === "informado") {
         let valor = Number(document.getElementById("tetoInformado").value);
         if (!Number.isFinite(valor) || valor < 0) valor = 0;
@@ -965,11 +970,15 @@ function preencherComparacao(entrada, normal) {
     }
 
     const cotaGovernador = montarFolha({ ...entrada, teto: comparacao.valor, tetoDaCota: TETO_SP });
+    const cotaDesembargador = montarFolha({ ...entrada, teto: TETO_STF, tetoDaCota: TETO_DESEMBARGADOR });
     const cotaTeto = montarFolha({ ...entrada, teto: comparacao.valor, tetoDaCota: comparacao.valor });
     const nomeGovernador = document.getElementById("cmp-cota-governador-nome");
     const nomeCotaTeto = document.getElementById("cmp-cota-teto-nome");
+    const linhaDesembargador = document.querySelector('#comparacaoTeto [data-cenario="cota-desembargador"]');
+    const mostraDesembargador = comparacao.tipo === "stf" || comparacao.tipo === "hibrido";
+    if (linhaDesembargador) linhaDesembargador.classList.toggle("d-none", !mostraDesembargador);
     if (nomeGovernador && nomeCotaTeto) {
-        if (comparacao.tipo === "stf") {
+        if (comparacao.tipo === "stf" || comparacao.tipo === "hibrido") {
             nomeGovernador.textContent = "Teto STF e Cota governador";
             nomeCotaTeto.textContent = "Teto e cota STF";
         } else {
@@ -980,11 +989,14 @@ function preencherComparacao(entrada, normal) {
     const linhas = [
         ["folha", normal, TETO_SP],
         ["cota-governador", cotaGovernador, comparacao.valor],
+        ["cota-desembargador", cotaDesembargador, TETO_STF],
         ["cota-teto", cotaTeto, comparacao.valor]
     ];
     const ativa = folhaAtual
         ? "folha"
-        : (Math.abs(entrada.tetoDaCota - TETO_SP) < 0.005 ? "cota-governador" : "cota-teto");
+        : (Math.abs(entrada.tetoDaCota - TETO_DESEMBARGADOR) < 0.005
+            ? "cota-desembargador"
+            : (Math.abs(entrada.tetoDaCota - TETO_SP) < 0.005 ? "cota-governador" : "cota-teto"));
     for (const [id, folha, teto] of linhas) {
         document.getElementById(`cmp-${id}-cota`).textContent = numberToQuota(folha.valorCota);
         document.getElementById(`cmp-${id}-teto`).textContent = numberToRealArredondado(teto);
@@ -1122,9 +1134,14 @@ function atualizarAuxilioSaude() {
 document.addEventListener("DOMContentLoaded", () => {
     const tipoTeto = document.getElementById("tipoTeto");
     const grupoTetoInformado = document.getElementById("grupoTetoInformado");
+    const grupoCotaAcompanha = document.getElementById("grupoCotaAcompanha");
+    const ajudaHibrido = document.getElementById("ajudaHibrido");
     if (tipoTeto && grupoTetoInformado) {
         const atualizarTetoInformado = () => {
+            const hibrido = tipoTeto.value === "hibrido";
             grupoTetoInformado.classList.toggle("d-none", tipoTeto.value !== "informado");
+            if (grupoCotaAcompanha) grupoCotaAcompanha.classList.toggle("d-none", hibrido);
+            if (ajudaHibrido) ajudaHibrido.classList.toggle("d-none", !hibrido);
         };
         tipoTeto.addEventListener("change", atualizarTetoInformado);
         atualizarTetoInformado();
@@ -1170,9 +1187,13 @@ document.addEventListener("DOMContentLoaded", () => {
                 document.getElementById("tipoTeto").value = "sp";
                 document.getElementById("cotaAcompanhaTeto").value = "0";
                 document.getElementById("tipoTeto").dispatchEvent(new Event("change"));
+            } else if (linha.dataset.cenario === "cota-desembargador") {
+                document.getElementById("tipoTeto").value = "hibrido";
+                document.getElementById("tipoTeto").dispatchEvent(new Event("change"));
             } else if (tetoEmComparacao) {
-                document.getElementById("tipoTeto").value = tetoEmComparacao.tipo;
-                if (tetoEmComparacao.tipo === "informado") {
+                const tipo = tetoEmComparacao.tipo === "hibrido" ? "stf" : tetoEmComparacao.tipo;
+                document.getElementById("tipoTeto").value = tipo;
+                if (tipo === "informado") {
                     document.getElementById("tetoInformado").value = String(tetoEmComparacao.valor);
                 }
                 document.getElementById("cotaAcompanhaTeto").value = linha.dataset.cenario === "cota-teto" ? "1" : "0";
