@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Folga AFRE — SEFAZ-SP</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link href="../css/base.css" rel="stylesheet">
+    <link href="../css/folga.css" rel="stylesheet">
+</head>
+<body>
+    <header class="folga-top">
+        <p class="marca"><span class="marca-bolinha"><i class="bi bi-calendar2-check-fill"></i></span><span>folga</span> afre<small>SEFAZ-SP</small></p>
+        <button id="themeBtn" class="tema" type="button">Tema escuro</button>
+    </header>
+
+    <main class="miolo">
+        <section class="hero">
+            <span class="hero-tag">Planejador de férias e licenças · AFRE</span>
+            <h1>Descubra os melhores dias para <em>sair de férias</em></h1>
+            <p>Junta feriados, pontes e fins de semana para transformar seus 30 dias em o máximo de descanso seguido, cuidando do ATIN e da PR.</p>
+        </section>
+
+        <form id="busca" class="busca">
+            <div class="secao-form">
+                <span class="passo">1</span>
+                <div>
+                    <h2>Quando e onde</h2>
+                    <p>Ano do calendário, janela da busca e feriados municipais da sua DRT.</p>
+                </div>
+            </div>
+            <div class="row g-3">
+                <label class="campo col-6 col-md-3">Ano
+                    <input id="year" type="number" min="2024" max="2040" value="2027">
+                </label>
+                <label class="campo col-6 col-md-5">Período da busca
+                    <select id="period">
+                        <option value="all">Ano todo</option>
+                        <option value="s1">1º semestre (jan–jun)</option>
+                        <option value="s2">2º semestre (jul–dez)</option>
+                        <option value="q1">1º trimestre</option>
+                        <option value="q2">2º trimestre</option>
+                        <option value="q3">3º trimestre</option>
+                        <option value="q4">4º trimestre</option>
+                        <option value="custom">Intervalo de meses</option>
+                    </select>
+                </label>
+                <label class="campo col-12 col-md-4">Cidade / DRT
+                    <select id="city">
+                        <option value="saopaulo">São Paulo — Capital</option>
+                        <option value="campinas">Campinas</option>
+                        <option value="santos">Santos</option>
+                        <option value="ribeirao">Ribeirão Preto</option>
+                        <option value="prudente">Presidente Prudente</option>
+                        <option value="nenhuma">Só nacional e estadual</option>
+                    </select>
+                </label>
+            </div>
+            <div id="customMonths" class="row g-3 mt-1 d-none">
+                <label class="campo col-6">De
+                    <select id="monthFrom"></select>
+                </label>
+                <label class="campo col-6">Até
+                    <select id="monthTo"></select>
+                </label>
+            </div>
+
+            <hr class="divisor">
+
+            <div class="secao-form">
+                <span class="passo">2</span>
+                <div>
+                    <h2>Como dividir os 30 dias de férias</h2>
+                    <p>Sem piso obrigatório. Você pode exigir que todos os períodos tenham um mínimo ou que ao menos um deles seja mais longo (ex.: 15 dias).</p>
+                </div>
+            </div>
+            <div class="row g-3 align-items-end">
+                <div class="col-12 col-md-6">
+                    <div class="dividir" id="feriasMode">
+                        <label><strong>1 período</strong><small>30 dias corridos</small><input type="radio" name="feriasMode" value="1"></label>
+                        <label><strong>2 períodos</strong><small>duas paradas</small><input type="radio" name="feriasMode" value="2"></label>
+                        <label><strong>3 períodos</strong><small>mais pontes</small><input type="radio" name="feriasMode" value="3" checked></label>
+                    </div>
+                </div>
+                <label class="campo col-6 col-md-3 mb-0">Mínimo em cada período
+                    <input id="minBlock" type="number" min="0" max="30" value="0">
+                </label>
+                <label class="campo col-6 col-md-3 mb-0">Ao menos 1 período ≥
+                    <input id="minOneBlock" type="number" min="0" max="30" value="0" placeholder="ex: 15">
+                </label>
+            </div>
+
+            <hr class="divisor">
+
+            <div class="secao-form">
+                <span class="passo">3</span>
+                <div>
+                    <h2>Outros saldos para emendar</h2>
+                    <p>Entram nas pontes de um dia ou como bloco extra de licença-prêmio.</p>
+                </div>
+            </div>
+            <div class="row g-3">
+                <label class="campo col-6 col-md-3 mb-0">Licença-prêmio
+                    <input id="lp" type="number" min="0" max="90" value="0">
+                </label>
+                <label class="campo col-6 col-md-3 mb-0">Faltas abonadas
+                    <input id="abonadas" type="number" min="0" max="6" value="0">
+                </label>
+                <label class="campo col-6 col-md-3 mb-0">Eleitoral / doação
+                    <input id="eleitoral" type="number" min="0" max="10" value="0">
+                </label>
+                <label class="campo col-6 col-md-3 mb-0">Escala / plantão
+                    <input id="escala" type="number" min="0" max="15" value="0">
+                </label>
+            </div>
+
+            <details class="config-extra">
+                <summary><i class="bi bi-sliders2"></i> Valores de PR, UFESP e diligências</summary>
+                <div class="row g-3 mt-1">
+                    <label class="campo col-6 col-md-4 mb-0">UFESP (R$)
+                        <input id="ufesp" type="number" min="1" step="0.01" value="38.50">
+                    </label>
+                    <label class="campo col-6 col-md-4 mb-0">PR trimestral (R$)
+                        <input id="prValor" type="number" min="0" step="100" value="12000">
+                    </label>
+                    <label class="campo col-12 col-md-4 mb-0">Diligências por dia útil
+                        <input id="maxDil" type="number" min="1" max="6" value="1">
+                    </label>
+                </div>
+                <p id="atinPreview" class="ajuda mt-2"></p>
+            </details>
+
+            <button id="calcBtn" class="buscar" type="submit"><i class="bi bi-magic"></i> Buscar melhores períodos</button>
+            <p id="calcMsg" class="aviso-calc"></p>
+        </form>
+
+        <div id="audit" class="alerta danger d-none mt-3"></div>
+        <div id="scenarios"></div>
+
+        <section class="bloco bloco-calendario" id="calSection">
+            <div class="pdf-cabeca" id="pdfHeader"></div>
+            <div class="cabeca-bloco no-print">
+                <div>
+                    <span class="etiqueta">Simulador e fixação</span>
+                    <h2>Calendário do ano</h2>
+                </div>
+                <div class="acoes-calendario">
+                    <button id="optRestBtn" class="otimizar-resto d-none" type="button"><i class="bi bi-magic"></i> Otimizar o restante</button>
+                    <button id="pdfBtn" class="botao-pdf" type="button"><i class="bi bi-file-earmark-pdf-fill"></i> Exportar PDF</button>
+                    <button id="clearBtn" class="secundario" type="button"><i class="bi bi-eraser"></i> Limpar afastamentos</button>
+                </div>
+            </div>
+            <div id="lockedBanner" class="banner-fixo d-none no-print"></div>
+            <div id="liveScore" class="placar-vivo"></div>
+            <div id="pdfPeriods" class="pdf-periodos"></div>
+            <div id="validation" class="alertas no-print"></div>
+            <div class="barra-pintura no-print">
+                <div id="paintbar" class="tintas"></div>
+                <p class="ajuda m-0">Clique marca um dia · Shift+clique preenche o intervalo.</p>
+            </div>
+            <div id="legend" class="legenda mt-2"></div>
+            <div id="calendar" class="calendario mt-3"></div>
+        </section>
+
+        <details class="bloco bloco-expansivel">
+            <summary class="cabeca-bloco resumo-expansivel">
+                <div>
+                    <span class="etiqueta">Financeiro</span>
+                    <h2>Efeito no contracheque <small>(ATIN e PR)</small></h2>
+                </div>
+                <span class="icone-expansivel"><i class="bi bi-chevron-down"></i></span>
+            </summary>
+            <div class="corpo-expansivel">
+                <p class="ajuda">ATIN do mês (limite de 20 dias) e PR do trimestre (limite de 1/3) para o calendário pintado agora.</p>
+                <h3 class="grupo-titulo mt-3">ATIN por mês</h3>
+                <div id="monthBars" class="meses-atin"></div>
+                <h3 class="grupo-titulo mt-4">PR por trimestre</h3>
+                <div id="quarterBars" class="trimestres"></div>
+            </div>
+        </details>
+
+        <section class="bloco">
+            <div class="cabeca-bloco">
+                <div>
+                    <span class="etiqueta">Base de datas</span>
+                    <h2>Feriados e pontos facultativos</h2>
+                </div>
+                <button id="restoreBtn" class="secundario" type="button"><i class="bi bi-arrow-counterclockwise"></i> Restaurar lista</button>
+            </div>
+            <p class="ajuda">Pontes de terça e de quinta seguem os decretos recentes. Cinzas e vésperas entram como dia inteiro; desmarque na lista se preferir contar como expediente.</p>
+            <form id="addHoliday" class="linha-feriado">
+                <input id="hDate" required type="date">
+                <input id="hName" required type="text" maxlength="80" placeholder="Nome do feriado ou ponto">
+                <select id="hKind">
+                    <option value="feriado">Feriado</option>
+                    <option value="facultativo">Ponto facultativo</option>
+                </select>
+                <button class="adicionar" type="submit">Adicionar</button>
+            </form>
+            <div id="holidayList" class="lista-feriados"></div>
+        </section>
+
+        <details class="regras">
+            <summary>Regras usadas na busca</summary>
+            <p>Férias: 30 dias, em até 3 períodos, sem piso de 15. O adicional de 1/3 fica no primeiro período. A busca não começa nem termina férias em sábado, domingo, feriado ou ponto facultativo, e não cobre essas datas por dentro do bloco.</p>
+            <p>PR: férias e escala contam como efetivo exercício. Licença-prêmio, saúde, abonada, eleitoral e doação cortam a PR do trimestre em 1 dividido pelos dias do trimestre. Passou de 1/3, a perda vai a 100%.</p>
+            <p>ATIN: 300 UFESPs. Mais de 20 dias de afastamento no mês civil zera o auxílio. Escala fica fora dessa conta. Também precisam caber 6 diligências nos dias úteis restantes.</p>
+            <p>Dias de descanso = saldo usado mais feriados, pontos e fins de semana emendados, inclusive 1º de janeiro do ano seguinte.</p>
+        </details>
+    </main>
+
+    <script src="../js/folga/engine.js"></script>
+    <script src="../js/folga/ui.js"></script>
+</body>
+</html>
