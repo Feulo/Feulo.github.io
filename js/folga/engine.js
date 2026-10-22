@@ -15,25 +15,110 @@
       eleitoral: { label: 'Eleitoral / doação', short: 'Eleitoral', atin: true, pr: true },
       escala: { label: 'Escala / plantão', short: 'Escala', atin: false, pr: false },
       saude: { label: 'Licença-saúde', short: 'Saúde', atin: true, pr: true },
-      nojo: { label: 'Nojo / gala', short: 'Nojo/gala', atin: true, pr: false }
+      nojo: { label: 'Nojo / gala', short: 'Nojo/gala', atin: true, pr: false },
+      bloqueado: { label: 'Expediente obrigatório (bloqueado)', short: 'Bloqueado', atin: false, pr: false, blocked: true }
     };
     const CITY_PRESETS = {
-      saopaulo: { label: 'São Paulo — Capital', holidays: [{ month: 1, day: 25, name: 'Aniversário de São Paulo' }] },
-      campinas: { label: 'Campinas', holidays: [{ month: 12, day: 8, name: 'Nossa Senhora da Conceição' }] },
-      santos: { label: 'Santos', holidays: [
-        { month: 1, day: 26, name: 'Aniversário de Santos' },
-        { month: 9, day: 8, name: 'Nossa Senhora do Monte Serrat' }
-      ] },
-      ribeirao: { label: 'Ribeirão Preto', holidays: [
-        { month: 1, day: 20, name: 'São Sebastião' },
-        { month: 6, day: 19, name: 'Aniversário de Ribeirão Preto' }
-      ] },
-      prudente: { label: 'Presidente Prudente', holidays: [
-        { month: 1, day: 20, name: 'São Sebastião' },
-        { month: 9, day: 14, name: 'Aniversário de Presidente Prudente' },
-        { month: 12, day: 8, name: 'Imaculada Conceição' }
-      ] },
-      nenhuma: { label: 'Só nacional e estadual', holidays: [] }
+      saopaulo: {
+        label: 'São Paulo',
+        holidays: [{ month: 1, day: 25, name: 'Aniversário de São Paulo' }]
+      },
+      dtic: {
+        label: 'São Paulo',
+        holidays: [{ month: 1, day: 25, name: 'Aniversário de São Paulo' }]
+      },
+      santos: {
+        label: 'Santos',
+        holidays: [
+          { month: 1, day: 26, name: 'Aniversário de Santos' },
+          { month: 9, day: 8, name: 'Nossa Senhora do Monte Serrat' }
+        ]
+      },
+      taubate: {
+        label: 'Taubaté',
+        holidays: [
+          { month: 2, day: 5, name: 'Elevação de Taubaté a cidade' },
+          { easterDelta: 1, name: 'Festa de São Benedito' },
+          { month: 10, day: 4, name: 'São Francisco das Chagas' }
+        ]
+      },
+      sorocaba: {
+        label: 'Sorocaba',
+        holidays: [{ month: 8, day: 15, name: 'Aniversário de Sorocaba · N. Sra. da Ponte' }]
+      },
+      campinas: {
+        label: 'Campinas',
+        holidays: [{ month: 12, day: 8, name: 'Nossa Senhora da Conceição' }]
+      },
+      ribeirao: {
+        label: 'Ribeirão Preto',
+        holidays: [
+          { month: 1, day: 20, name: 'São Sebastião' },
+          { month: 6, day: 19, name: 'Aniversário de Ribeirão Preto' }
+        ]
+      },
+      bauru: {
+        label: 'Bauru',
+        holidays: [{ month: 8, day: 1, name: 'Aniversário de Bauru' }]
+      },
+      riopreto: {
+        label: 'São José do Rio Preto',
+        holidays: [
+          { month: 3, day: 19, name: 'Aniversário de São José do Rio Preto · São José' },
+          { month: 12, day: 8, name: 'Imaculada Conceição' }
+        ]
+      },
+      aracatuba: {
+        label: 'Araçatuba',
+        holidays: [{ month: 12, day: 2, name: 'Aniversário de Araçatuba' }]
+      },
+      prudente: {
+        label: 'Presidente Prudente',
+        holidays: [
+          { month: 1, day: 20, name: 'São Sebastião' },
+          { month: 9, day: 14, name: 'Aniversário de Presidente Prudente' },
+          { month: 12, day: 8, name: 'Imaculada Conceição' }
+        ]
+      },
+      marilia: {
+        label: 'Marília',
+        holidays: [
+          { month: 4, day: 4, name: 'Aniversário de Marília' },
+          { month: 7, day: 11, name: 'São Bento' },
+          { month: 12, day: 8, name: 'Imaculada Conceição' }
+        ]
+      },
+      abcd: {
+        label: 'São Bernardo do Campo',
+        holidays: [{ month: 8, day: 20, name: 'Aniversário de São Bernardo do Campo' }]
+      },
+      santoandre: {
+        label: 'Santo André',
+        holidays: [{ month: 4, day: 8, name: 'Aniversário de Santo André' }]
+      },
+      guarulhos: {
+        label: 'Guarulhos',
+        holidays: [{ month: 12, day: 8, name: 'Aniversário de Guarulhos · N. Sra. da Conceição' }]
+      },
+      osasco: {
+        label: 'Osasco',
+        holidays: [
+          { month: 2, day: 19, name: 'Emancipação de Osasco' },
+          { month: 6, day: 13, name: 'Santo Antônio' }
+        ]
+      },
+      araraquara: {
+        label: 'Araraquara',
+        holidays: [{ month: 8, day: 22, name: 'Aniversário de Araraquara · São Bento' }]
+      },
+      jundiai: {
+        label: 'Jundiaí',
+        holidays: [{ month: 8, day: 15, name: 'Nossa Senhora do Desterro' }]
+      },
+      nenhuma: {
+        label: 'Só feriados nacionais e estadual',
+        holidays: []
+      }
     };
 
     function pad(n) { return String(n).padStart(2, '0'); }
@@ -74,7 +159,37 @@
       return s;
     }
 
-    function buildHolidayMap(year, cityId, custom, disabled) {
+    function recessoInfo(year) {
+      const d24 = Date.UTC(year, 11, 24);
+      const dow24 = new Date(d24).getUTCDay();
+      const offsetToMon = (dow24 + 6) % 7;
+      const monNatal = d24 - offsetToMon * DAY;
+      const friNatal = monNatal + 4 * DAY;
+      const endNatal = Math.max(friNatal, Date.UTC(year, 11, 25));
+      const monAnoNovo = monNatal + 7 * DAY;
+      const friAnoNovo = monAnoNovo + 4 * DAY;
+      const endAnoNovo = Math.max(friAnoNovo, Date.UTC(year + 1, 0, 1));
+      const natalIsos = [];
+      for (let t = monNatal; t <= friNatal; t += DAY) natalIsos.push(toISO(t));
+      const anoNovoIsos = [];
+      for (let t = monAnoNovo; t <= friAnoNovo; t += DAY) {
+        if (t !== Date.UTC(year, 11, 25) && t !== Date.UTC(year + 1, 0, 1)) anoNovoIsos.push(toISO(t));
+      }
+      return {
+        natal: {
+          start: toISO(monNatal),
+          end: toISO(endNatal),
+          isos: natalIsos
+        },
+        anonovo: {
+          start: toISO(monAnoNovo === Date.UTC(year, 11, 25) ? monAnoNovo + DAY : monAnoNovo),
+          end: toISO(endAnoNovo),
+          isos: anoNovoIsos
+        }
+      };
+    }
+
+    function buildHolidayMap(year, cityId, custom, disabled, recesso) {
       const map = new Map();
       function add(iso, entry) {
         if (!iso || disabled[iso]) return;
@@ -113,10 +228,14 @@
       addOff(-2, { name: 'Paixão de Cristo', scope: 'nacional', kind: 'feriado', source: 'base' });
       addOff(60, { name: 'Corpus Christi', scope: 'tradicional', kind: 'feriado', source: 'base', note: 'Recorrente no funcionalismo paulista. Não é feriado nacional.' });
       addMD(10, 28, { name: 'Dia do Servidor Público', scope: 'funcional', kind: 'facultativo', source: 'base', note: 'Ponto facultativo previsto. Confirmar decreto do exercício.' });
-      addMD(12, 24, { name: 'Véspera de Natal', scope: 'funcional', kind: 'facultativo', source: 'base', note: 'Em geral a partir das 13h. O simulador trata o dia inteiro como dispensa.' });
-      addMD(12, 31, { name: 'Véspera de Ano Novo', scope: 'funcional', kind: 'facultativo', source: 'base', note: 'Em geral a partir das 13h. O simulador trata o dia inteiro como dispensa.' });
+      addMD(12, 24, { name: 'Véspera de Natal', scope: 'funcional', kind: 'facultativo', source: 'base', note: 'Ponto facultativo (Decreto nº 70.273/2025, art. 1º, IX).' });
+      addMD(12, 31, { name: 'Véspera de Ano Novo', scope: 'funcional', kind: 'facultativo', source: 'base', note: 'Ponto facultativo (Decreto nº 70.273/2025, art. 1º, X).' });
       (CITY_PRESETS[cityId] || CITY_PRESETS.saopaulo).holidays.forEach(function (h) {
-        addMD(h.month, h.day, { name: h.name, scope: 'municipal', kind: 'feriado', source: 'municipal' });
+        if (typeof h.easterDelta === 'number') {
+          addOff(h.easterDelta, { name: h.name, scope: 'municipal', kind: 'feriado', source: 'municipal' });
+        } else {
+          addMD(h.month, h.day, { name: h.name, scope: 'municipal', kind: 'feriado', source: 'municipal' });
+        }
       });
       const baseEntries = Array.from(map.entries());
       baseEntries.forEach(function (pair) {
@@ -140,6 +259,19 @@
           note: 'Ponte tradicional prevista para feriado à terça ou à quinta. Desmarque se o decreto não confirmar.'
         });
       });
+      if (recesso === 'natal' || recesso === 'anonovo') {
+        const rec = recessoInfo(year)[recesso];
+        const label = recesso === 'natal' ? 'Recesso — Natal' : 'Recesso — Ano Novo';
+        rec.isos.forEach(function (iso) {
+          add(iso, {
+            name: label,
+            scope: 'recesso',
+            kind: 'facultativo',
+            source: 'recesso',
+            note: 'Recesso de final de ano mediante compensação de 1h diária (Decreto nº 70.273/2025, arts. 2º e 3º).'
+          });
+        });
+      }
       custom.forEach(function (c) {
         if (!c.iso || c.iso.slice(0, 4) !== String(year)) return;
         add(c.iso, { name: c.name, scope: 'personalizado', kind: c.kind === 'facultativo' ? 'facultativo' : 'feriado', source: 'custom', note: 'Incluído por você.' });
@@ -161,11 +293,11 @@
           inYear: true, year: year
         });
       }
-      for (let t = Date.UTC(year + 1, 0, 1); t <= Date.UTC(year + 1, 0, 3); t += DAY) {
+      for (let t = Date.UTC(year + 1, 0, 1); t <= Date.UTC(year + 1, 0, 6); t += DAY) {
         const iso = toISO(t);
         const dow = new Date(t).getUTCDay();
         const weekend = dow === 0 || dow === 6;
-        const holiday = iso.endsWith('-01-01') ? { name: 'Confraternização Universal', kind: 'feriado', scope: 'nacional' } : null;
+        const holiday = holidayMap.get(iso) || (iso.endsWith('-01-01') ? { name: 'Confraternização Universal', kind: 'feriado', scope: 'nacional' } : null);
         days.push({
           iso: iso, dow: dow, weekend: weekend, holiday: holiday,
           plain: !weekend && !holiday, month: 0, quarter: 0, inYear: false, year: year + 1
@@ -250,12 +382,13 @@
       return picked;
     }
 
-    function parseFixed(model, fixedMap) {
+    function parseFixed(model, fixedMap, expandFixed, totalFerias) {
+      const limiteFerias = clamp(Number(totalFerias) || 30, 1, 30);
       const occ = new Uint8Array(model.n);
       const baseCounts = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
       const baseNon = [0, 0, 0, 0];
       const baseAbMonth = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
-      const used = { ferias: 0, lp: 0, abonada: 0, eleitoral: 0, escala: 0, saude: 0, nojo: 0 };
+      const used = { ferias: 0, lp: 0, abonada: 0, eleitoral: 0, escala: 0, saude: 0, nojo: 0, bloqueado: 0 };
       const singles = [];
       if (!fixedMap) {
         return {
@@ -268,8 +401,13 @@
         const type = fixedMap[iso];
         if (i == null || !model.days[i].inYear || !TYPE_META[type]) return;
         const d = model.days[i];
-        occ[i] = 1;
         used[type] = (used[type] || 0) + 1;
+        if (TYPE_META[type].blocked) {
+          occ[i] = 1;
+          return;
+        }
+        if (expandFixed && type === 'ferias') return;
+        occ[i] = 1;
         if (TYPE_META[type].atin) baseCounts[d.month]++;
         if (TYPE_META[type].pr) baseNon[d.quarter]++;
         if (type === 'abonada') baseAbMonth[d.month]++;
@@ -302,17 +440,25 @@
 
       const feriasBlocks = extractRuns('ferias');
       const lpBlocks = extractRuns('lp');
-      for (let i = 0; i < feriasBlocks.length; i++) {
-        const b = feriasBlocks[i];
-        if (!model.days[b.i].plain) {
-          return { error: 'O período de férias marcado no calendário começa em ' + fmt(model.days[b.i].iso) + ', que já é folga. Comece em dia útil.' };
-        }
-        if (!model.days[b.j].plain) {
-          return { error: 'O período de férias marcado no calendário termina em ' + fmt(model.days[b.j].iso) + ', que já é folga. Termine em dia útil.' };
+      for (let i = 0; i < lpBlocks.length; i++) {
+        const b = lpBlocks[i];
+        if (b.len < 15) {
+          return { error: 'O bloco de licença-prêmio marcado no calendário tem ' + b.len + ' dia(s). O piso de cada bloco de licença-prêmio é de 15 dias.' };
         }
       }
-      if (used.ferias > 30) {
-        return { error: 'Você marcou ' + used.ferias + ' dias de férias no calendário. O limite é 30 dias.' };
+      if (!expandFixed) {
+        for (let i = 0; i < feriasBlocks.length; i++) {
+          const b = feriasBlocks[i];
+          if (!model.days[b.i].plain) {
+            return { error: 'O período de férias marcado no calendário começa em ' + fmt(model.days[b.i].iso) + ', que já é folga. Comece em dia útil ou ative "Esticar arredores".' };
+          }
+          if (!model.days[b.j].plain) {
+            return { error: 'O período de férias marcado no calendário termina em ' + fmt(model.days[b.j].iso) + ', que já é folga. Termine em dia útil ou ative "Esticar arredores".' };
+          }
+        }
+      }
+      if (used.ferias > limiteFerias) {
+        return { error: 'Você marcou ' + used.ferias + ' dias de férias no calendário, mas o saldo configurado é de ' + limiteFerias + ' dias.' };
       }
       if (feriasBlocks.length > 3) {
         return { error: 'Você marcou ' + feriasBlocks.length + ' períodos de férias no calendário. O limite é 3 períodos.' };
@@ -353,7 +499,6 @@
           const end = days[j];
           if (!end.inYear || !inPeriod(end, cfg)) break;
           if (fixedOcc && fixedOcc[j]) break;
-          if (end.holiday) break;
           const counts = countMonths(model, i, j);
           if (!monthsOk(addCounts(zeroCounts, counts))) break;
           if (!end.plain) continue;
@@ -365,8 +510,131 @@
       return byLen;
     }
 
+    function enumerateAnchor(model, anchor, fixedOcc, baseCounts) {
+      const byLen = Array.from({ length: 31 }, function () { return []; });
+      const days = model.days;
+      const zeroCounts = baseCounts || [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+      const minI = Math.max(0, anchor.j - 29);
+      const maxJ = Math.min(model.n - 1, anchor.i + 29);
+      for (let i = minI; i <= anchor.i; i++) {
+        const start = days[i];
+        if (!start.plain || !start.inYear) continue;
+        if (fixedOcc && fixedOcc[i]) continue;
+        for (let j = anchor.j; j <= maxJ; j++) {
+          const len = j - i + 1;
+          if (len > 30) break;
+          const end = days[j];
+          if (!end.inYear) break;
+          if (fixedOcc && fixedOcc[j]) break;
+          const counts = countMonths(model, i, j);
+          if (!monthsOk(addCounts(zeroCounts, counts))) break;
+          if (!end.plain) continue;
+          let clashOcc = false;
+          for (let k = i; k <= j; k++) {
+            if (fixedOcc && fixedOcc[k]) { clashOcc = true; break; }
+          }
+          if (clashOcc) break;
+          const info = attachment(model, i, j);
+          byLen[len].push(Object.assign({
+            i: i, j: j, len: len, counts: counts, locked: true,
+            anchorStart: days[anchor.i].iso, anchorEnd: days[anchor.j].iso
+          }, info));
+        }
+      }
+      for (let len = 1; len <= 30; len++) {
+        byLen[len].sort(function (a, b) {
+          return b.bonus - a.bonus || a.wasteHoliday - b.wasteHoliday || b.shape - a.shape || a.wasteWeekend - b.wasteWeekend || b.island - a.island;
+        });
+        byLen[len] = byLen[len].slice(0, 10);
+      }
+      return byLen;
+    }
+
     function setSignature(blocks) {
       return blocks.map(function (b) { return b.i + '-' + b.j; }).sort().join('|');
+    }
+
+    function combineVacationExpanded(byLen, anchorPools, totalSlots, totalFerias, minBlock, minOneBlock, baseCounts) {
+      const metaDias = clamp(Number(totalFerias) || 30, 1, 30);
+      const zeroCounts = baseCounts || [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+      const minLen = Math.max(1, minBlock || 0);
+      const minOne = Math.max(0, minOneBlock || 0);
+      if (minLen * totalSlots > metaDias) {
+        return { error: 'O mínimo de ' + minLen + ' dias por período não cabe em ' + metaDias + ' dias divididos em ' + totalSlots + ' período(s).' };
+      }
+      if (minOne > metaDias - minLen * (totalSlots - 1)) {
+        return { error: 'Não cabe um período de pelo menos ' + minOne + ' dias dividindo ' + metaDias + ' dias em ' + totalSlots + ' período(s).' };
+      }
+      const pools = anchorPools.slice();
+      const isFree = anchorPools.map(function () { return false; });
+      while (pools.length < totalSlots) {
+        pools.push(byLen);
+        isFree.push(true);
+      }
+
+      function validSet(blocks) {
+        if (!blocks.some(function (b) { return b.len >= minOne; })) return false;
+        for (let a = 0; a < blocks.length; a++) {
+          for (let b = a + 1; b < blocks.length; b++) {
+            if (overlaps(blocks[a], blocks[b]) || blocks[a].j + 1 === blocks[b].i || blocks[b].j + 1 === blocks[a].i) return false;
+          }
+        }
+        let counts = zeroCounts.slice();
+        for (let k = 0; k < blocks.length; k++) counts = addCounts(counts, blocks[k].counts);
+        return monthsOk(counts);
+      }
+
+      if (totalSlots === 1) {
+        const sets = (pools[0][metaDias] || []).map(function (c) { return [c]; }).filter(validSet);
+        return { sets: rankSets(sets) };
+      }
+      if (totalSlots === 2) {
+        const sets = [];
+        for (let a = minLen; a <= metaDias - minLen; a++) {
+          const b = metaDias - a;
+          if (Math.max(a, b) < minOne) continue;
+          (pools[0][a] || []).forEach(function (x) {
+            (pools[1][b] || []).forEach(function (y) {
+              if (isFree[0] && isFree[1] && x.i >= y.i) return;
+              const pair = [x, y];
+              if (validSet(pair)) sets.push(pair);
+            });
+          });
+        }
+        return { sets: rankSets(sets) };
+      }
+      const pairs = [];
+      for (let a = minLen; a <= metaDias - 2 * minLen; a++) {
+        (pools[0][a] || []).forEach(function (x) {
+          for (let b = minLen; b <= metaDias - a - minLen; b++) {
+            const cLen = metaDias - a - b;
+            if (cLen < minLen) continue;
+            if (Math.max(a, b, cLen) < minOne) continue;
+            (pools[1][b] || []).forEach(function (y) {
+              if (isFree[0] && isFree[1] && x.i >= y.i) return;
+              if (overlaps(x, y) || x.j + 1 === y.i || y.j + 1 === x.i) return;
+              const counts = addCounts(zeroCounts, addCounts(x.counts, y.counts));
+              if (!monthsOk(counts)) return;
+              pairs.push({ x: x, y: y, cLen: cLen, counts: counts, bonus: x.bonus + y.bonus });
+            });
+          }
+        });
+      }
+      pairs.sort(function (p, q) { return q.bonus - p.bonus; });
+      const sets = [];
+      const seen = new Set();
+      pairs.slice(0, 750).forEach(function (p) {
+        (pools[2][p.cLen] || []).forEach(function (z) {
+          if (isFree[1] && isFree[2] && p.y.i >= z.i) return;
+          const blocks = [p.x, p.y, z];
+          if (!validSet(blocks)) return;
+          const sig = setSignature(blocks);
+          if (seen.has(sig)) return;
+          seen.add(sig);
+          sets.push(blocks);
+        });
+      });
+      return { sets: rankSets(sets) };
     }
 
     function combineVacation(byLen, targetSlots, targetDays, minBlock, minOneBlock, fixedFerias, baseCounts) {
@@ -380,12 +648,12 @@
 
       if (targetDays === 0) {
         if (!allLengths([])) {
-          return { error: 'Os períodos de férias fixados no calendário somam 30 dias, mas nenhum tem pelo menos ' + minOne + ' dias.' };
+          return { error: 'Os períodos de férias fixados no calendário já usam todo o saldo, mas nenhum tem pelo menos ' + minOne + ' dias.' };
         }
         return { sets: [[]] };
       }
       if (targetSlots <= 0) {
-        return { error: 'Você já fixou ' + fixed.length + ' período(s) no calendário somando ' + (30 - targetDays) + ' dias. Aumente o número de períodos ou complete os 30 dias.' };
+        return { error: 'Você já fixou ' + fixed.length + ' período(s) no calendário. Aumente o número de períodos ou complete os dias de férias.' };
       }
       if (minLen * targetSlots > targetDays) {
         return { error: 'O mínimo de ' + minLen + ' dias por período não cabe nos ' + targetDays + ' dias restantes em ' + targetSlots + ' período(s).' };
@@ -553,6 +821,7 @@
         });
       }
       let best = null;
+      const blockedOcc = fixedInfo ? fixedInfo.occ : null;
       parts.forEach(function (part) {
         const placed = [];
         const used = occupiedRanges.slice();
@@ -561,7 +830,12 @@
           let choice = null;
           let score = -Infinity;
           (byLen[len] || []).forEach(function (c) {
-            if (used.some(function (u) { return overlaps(u, c); })) return;
+            if (used.some(function (u) { return overlaps(u, c) || u.j + 1 === c.i || c.j + 1 === u.i; })) return;
+            if (blockedOcc) {
+              for (let k = c.i; k <= c.j; k++) {
+                if (blockedOcc[k]) return;
+              }
+            }
             const trial = used.concat([{ i: c.i, j: c.j, type: 'lp', counts: c.counts }]);
             const counts = trial.reduce(function (acc, r) { return addCounts(acc, r.counts); }, singleCounts.slice());
             if (!monthsOk(counts)) return;
@@ -584,11 +858,16 @@
       return { blocks: best.blocks, note: note };
     }
 
-    function buildOccupancy(model, ranges, fixedSingles) {
+    function buildOccupancy(model, ranges, fixedSingles, blockedOcc) {
       const n = model.n;
       const off = new Uint8Array(model.baseOff);
       const isLeave = new Uint8Array(n);
       const leaveType = new Array(n).fill('');
+      if (blockedOcc) {
+        for (let k = 0; k < n; k++) {
+          if (blockedOcc[k] && !leaveType[k]) leaveType[k] = 'bloqueado';
+        }
+      }
       ranges.forEach(function (r) {
         for (let k = r.i; k <= r.j; k++) {
           off[k] = 1;
@@ -626,14 +905,16 @@
     function monthRemaining(model, leaveType) {
       const rem = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
       model.days.forEach(function (d, i) {
-        if (d.inYear && d.plain && !leaveType[i]) rem[d.month]++;
+        const t = leaveType[i];
+        const isLeaveDay = t && (!TYPE_META[t] || !TYPE_META[t].blocked);
+        if (d.inYear && d.plain && !isLeaveDay) rem[d.month]++;
       });
       return rem;
     }
 
     function placeSingles(model, ranges, cfg, strategy, fixedInfo) {
       const fixedSingles = fixedInfo ? fixedInfo.singles : [];
-      const occ = buildOccupancy(model, ranges, fixedSingles);
+      const occ = buildOccupancy(model, ranges, fixedSingles, fixedInfo ? fixedInfo.occ : null);
       const atin = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
       const non = [0, 0, 0, 0];
       const abMonth = fixedInfo ? fixedInfo.baseAbMonth.slice() : [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
@@ -699,8 +980,13 @@
       return singles;
     }
 
-    function leaveMapFromPlan(model, blocks, singles) {
+    function leaveMapFromPlan(model, blocks, singles, fixedMap) {
       const map = {};
+      if (fixedMap) {
+        Object.keys(fixedMap).forEach(function (iso) {
+          if (fixedMap[iso] === 'bloqueado') map[iso] = 'bloqueado';
+        });
+      }
       blocks.forEach(function (b) {
         for (let k = b.i; k <= b.j; k++) if (model.days[k].inYear) map[model.days[k].iso] = b.type;
       });
@@ -716,6 +1002,8 @@
       Object.keys(leaveMap).forEach(function (iso) {
         const i = index.get(iso);
         if (i == null) return;
+        const t = leaveMap[iso];
+        if (!TYPE_META[t] || TYPE_META[t].blocked) return;
         off[i] = 1;
         isLeave[i] = 1;
       });
@@ -747,7 +1035,7 @@
       }
       const atin = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
       const non = [0, 0, 0, 0];
-      const used = { ferias: 0, lp: 0, abonada: 0, eleitoral: 0, escala: 0, saude: 0, nojo: 0 };
+      const used = { ferias: 0, lp: 0, abonada: 0, eleitoral: 0, escala: 0, saude: 0, nojo: 0, bloqueado: 0 };
       const abMonth = {};
       let waste = 0;
       let spent = 0;
@@ -759,6 +1047,7 @@
         if (!meta) return;
         const day = model.days[i];
         used[type] = (used[type] || 0) + 1;
+        if (meta.blocked) return;
         spent++;
         if (meta.atin) atin[day.month]++;
         if (meta.pr) non[day.quarter]++;
@@ -796,7 +1085,9 @@
       Object.keys(leaveMap).forEach(function (iso) {
         const i = index.get(iso);
         if (i == null || !model.days[i].inYear) return;
-        leaveTypeArr[i] = leaveMap[iso];
+        const t = leaveMap[iso];
+        if (!TYPE_META[t] || TYPE_META[t].blocked) return;
+        leaveTypeArr[i] = t;
         leaveMonths[model.days[i].month] = true;
       });
       const rem = monthRemaining(model, leaveTypeArr);
@@ -823,8 +1114,10 @@
       return Object.keys(leaveMap).sort().map(function (iso) { return iso + leaveMap[iso]; }).join(',');
     }
 
-    function finishPlan(model, byLen, vacation, cfg, strategy, fixedInfo) {
-      const ferias = rangesFrom(fixedInfo ? fixedInfo.feriasBlocks : [], 'ferias').concat(rangesFrom(vacation, 'ferias'));
+    function finishPlan(model, byLen, vacation, cfg, strategy, fixedInfo, expandFixed, fixedMap) {
+      const ferias = expandFixed
+        ? rangesFrom(vacation, 'ferias')
+        : rangesFrom(fixedInfo ? fixedInfo.feriasBlocks : [], 'ferias').concat(rangesFrom(vacation, 'ferias'));
       const fixedLp = rangesFrom(fixedInfo ? fixedInfo.lpBlocks : [], 'lp');
       const occupied = ferias.concat(fixedLp);
       const lpPlace = placeLP(model, byLen, occupied, cfg, strategy, fixedInfo);
@@ -835,9 +1128,10 @@
         };
       }));
       const singles = placeSingles(model, blocks, cfg, strategy, fixedInfo);
-      const leaveMap = leaveMapFromPlan(model, blocks, singles);
+      const leaveMap = leaveMapFromPlan(model, blocks, singles, fixedMap);
       const report = analyze(model, cfg, leaveMap);
-      if (report.feriasDays !== 30 || !report.atinOk || !report.prOk || !report.dilOk) return null;
+      const metaDias = clamp(Number(cfg && cfg.feriasTotal) || 30, 1, 30);
+      if (report.feriasDays !== metaDias || !report.atinOk || !report.prOk || !report.dilOk) return null;
       return Object.assign(report, {
         blocks: blocks.map(function (b) {
           return {
@@ -855,27 +1149,40 @@
     }
 
     function optimize(model, cfg, fixedMap) {
-      const fixedInfo = parseFixed(model, fixedMap);
+      const expandFixed = Boolean(cfg && cfg.expandFixed);
+      const totalFerias = clamp(Number(cfg && cfg.feriasTotal) || 30, 1, 30);
+      const fixedInfo = parseFixed(model, fixedMap, expandFixed, totalFerias);
       if (fixedInfo.error) return { error: fixedInfo.error };
       const fixedFerias = fixedInfo.feriasBlocks;
       const fixedDays = fixedInfo.used.ferias || 0;
-      const targetDays = 30 - fixedDays;
-      const totalSlots = Math.max(cfg.mode || 3, fixedFerias.length + (targetDays > 0 ? 1 : 0));
+      const targetDays = totalFerias - fixedDays;
+      const requestedMode = Math.min(clamp(Number(cfg && cfg.mode) || 3, 1, 3), totalFerias);
+      const totalSlots = expandFixed
+        ? Math.max(requestedMode, fixedFerias.length || 1)
+        : Math.max(requestedMode, fixedFerias.length + (targetDays > 0 ? 1 : 0));
       if (totalSlots > 3) {
-        return { error: 'Com os períodos já marcados no calendário, seriam necessários mais de 3 períodos para fechar 30 dias.' };
+        return { error: 'Com os períodos já marcados no calendário, seriam necessários mais de 3 períodos para fechar os ' + totalFerias + ' dias.' };
       }
-      const targetSlots = targetDays === 0 ? 0 : (cfg.mode >= fixedFerias.length + 1 ? cfg.mode - fixedFerias.length : 1);
       const byLen = enumerate(model, cfg, fixedInfo.occ, fixedInfo.baseCounts);
-      const combined = combineVacation(byLen, targetSlots, targetDays, cfg.minBlock, cfg.minOneBlock, fixedFerias, fixedInfo.baseCounts);
+      let combined;
+      if (expandFixed && fixedFerias.length > 0) {
+        const anchorPools = fixedFerias.map(function (a) {
+          return enumerateAnchor(model, a, fixedInfo.occ, fixedInfo.baseCounts);
+        });
+        combined = combineVacationExpanded(byLen, anchorPools, totalSlots, totalFerias, cfg.minBlock, cfg.minOneBlock, fixedInfo.baseCounts);
+      } else {
+        const targetSlots = targetDays === 0 ? 0 : Math.min(targetDays, requestedMode >= fixedFerias.length + 1 ? requestedMode - fixedFerias.length : 1);
+        combined = combineVacation(byLen, targetSlots, targetDays, cfg.minBlock, cfg.minOneBlock, fixedFerias, fixedInfo.baseCounts);
+      }
       if (combined.error) return combined;
       if (!combined.sets.length) {
-        return { error: 'Não há combinação somando os 30 dias de férias com essas restrições sem passar de 20 dias de afastamento num mês ou sem começar e terminar em dia útil.' };
+        return { error: 'Não há combinação somando os ' + totalFerias + ' dias de férias com essas restrições sem passar de 20 dias de afastamento num mês ou sem começar e terminar em dia útil.' };
       }
       const plans = [];
       const seen = new Set();
       combined.sets.forEach(function (set) {
         ['rest', 'cost', 'streak'].forEach(function (strategy) {
-          const plan = finishPlan(model, byLen, set, cfg, strategy, fixedInfo);
+          const plan = finishPlan(model, byLen, set, cfg, strategy, fixedInfo, expandFixed && fixedFerias.length > 0, fixedMap);
           if (!plan || seen.has(plan.signature)) return;
           seen.add(plan.signature);
           plans.push(plan);
@@ -889,7 +1196,8 @@
         fixedSummary: {
           feriasDays: fixedDays,
           feriasPeriods: fixedFerias.length,
-          totalFixedDays: Object.keys(fixedMap || {}).length
+          totalFixedDays: Object.keys(fixedMap || {}).length,
+          expanded: expandFixed && fixedFerias.length > 0
         }
       };
     }
@@ -960,6 +1268,11 @@
       if (camp.has('2027-01-25') || !camp.has('2027-12-08')) errors.push('campinas');
       const santos = buildHolidayMap(2027, 'santos', [], {});
       if (!santos.has('2027-01-26') || !santos.has('2027-09-08')) errors.push('santos');
+      const taubate = buildHolidayMap(2027, 'taubate', [], {});
+      if (!taubate.has('2027-02-05') || !taubate.has('2027-03-29') || !taubate.has('2027-10-04')) errors.push('taubate');
+      const rec2026 = recessoInfo(2026);
+      if (rec2026.natal.start !== '2026-12-21' || rec2026.natal.end !== '2026-12-25') errors.push('recesso natal 2026');
+      if (rec2026.anonovo.start !== '2026-12-28' || rec2026.anonovo.end !== '2027-01-01') errors.push('recesso anonovo 2026');
       return errors;
     }
 
@@ -972,6 +1285,7 @@
         cents,
         clamp,
         easterUTC,
+        recessoInfo,
         buildHolidayMap,
         buildModel,
         optimize,

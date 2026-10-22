@@ -35,7 +35,7 @@ jobs:
           def aplicar(texto, campo, valor):
               if not valor:
                   return texto
-              digest = hashlib.md5(valor.encode("utf-8")).hexdigest()
+              digest = hashlib.pbkdf2_hmac("sha256", valor.encode("utf-8"), b"sefaz-sp-afre-v2", 100000).hex()
               novo, trocas = re.subn(
                   rf'{campo}:\s*"(?:\\.|[^"\\])*"',
                   f"{campo}: {json.dumps(digest)}",

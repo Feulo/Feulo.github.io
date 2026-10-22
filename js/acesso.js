@@ -5,9 +5,10 @@
     const PAGINAS = ["remuneracao.html", "retroativos.html"];
     const pathname = location.pathname;
     const emLegado = /\/legado\//.test(pathname);
-    const pagina = pathname.split("/").pop() || "index.html";
-    const ehLanding = !emLegado && (pagina === "" || pagina === "index.html");
-    const raiz = emLegado ? "../" : "./";
+    const emFolga = /\/folga(\/|$)/.test(pathname);
+    const pagina = emFolga ? "folga/" : (pathname.split("/").pop() || "index.html");
+    const ehLanding = !emLegado && !emFolga && (pagina === "" || pagina === "index.html");
+    const raiz = (emLegado || emFolga) ? "../" : "./";
 
     function versao() {
         const valor = sessionStorage.getItem(CHAVE);
@@ -15,6 +16,7 @@
     }
 
     function arquivoSeguro(valor) {
+        if (valor === "folga/" || valor === "folga/index.html") return "folga/";
         return /^[a-z0-9.-]+\.html$/i.test(valor || "") ? valor : "";
     }
 
@@ -97,11 +99,40 @@
         return hex(a0) + hex(b0) + hex(c0) + hex(d0);
     }
 
-    function versaoDaSenha(senha) {
+    async function pbkdf2Hex(senha, saltTexto, iteracoes) {
+        if (!window.crypto || !window.crypto.subtle) return "";
+        const enc = new TextEncoder();
+        const keyMaterial = await window.crypto.subtle.importKey(
+            "raw",
+            enc.encode(String(senha || "")),
+            { name: "PBKDF2" },
+            false,
+            ["deriveBits"]
+        );
+        const bits = await window.crypto.subtle.deriveBits(
+            {
+                name: "PBKDF2",
+                salt: enc.encode(String(saltTexto || "sefaz-sp-afre-v2")),
+                iterations: Number(iteracoes) || 100000,
+                hash: "SHA-256"
+            },
+            keyMaterial,
+            256
+        );
+        return Array.from(new Uint8Array(bits)).map((b) => b.toString(16).padStart(2, "0")).join("");
+    }
+
+    async function versaoDaSenha(senha) {
+        if (!senha) return "";
         const config = window.SITE_CONFIG || {};
-        const hash = md5(senha || "");
-        if (senha && hash === config.senhaAtual) return "atual";
-        if (senha && (hash === config.senhaLegado || hash === "bbd6a62a8a291b19a802e4ad64547fff")) return "legado";
+        const hashPbkdf2 = await pbkdf2Hex(senha, config.pbkdf2Salt, config.pbkdf2Iteracoes);
+        if (hashPbkdf2) {
+            if (hashPbkdf2 === config.senhaAtual) return "atual";
+            if (hashPbkdf2 === config.senhaLegado) return "legado";
+        }
+        const hashMd5 = md5(senha);
+        if (hashMd5 === config.senhaAtual || hashMd5 === config.md5Atual) return "atual";
+        if (hashMd5 === config.senhaLegado || hashMd5 === config.md5Legado || hashMd5 === "bbd6a62a8a291b19a802e4ad64547fff") return "legado";
         return "";
     }
 
@@ -138,11 +169,11 @@
         if (!form) return;
         if (versao()) mostrarEntrada();
 
-        form.addEventListener("submit", (evento) => {
+        form.addEventListener("submit", async (evento) => {
             evento.preventDefault();
             const senha = document.getElementById("senha").value;
             const erro = document.getElementById("erroSenha");
-            const escolhida = versaoDaSenha(senha);
+            const escolhida = await versaoDaSenha(senha);
             if (!escolhida) {
                 erro.classList.remove("d-none");
                 document.getElementById("senha").focus();
