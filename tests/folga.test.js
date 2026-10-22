@@ -24,6 +24,70 @@ function modelo(city) {
     return Folga.buildModel(2027, mapa);
 }
 
+function faixa(ano, mes, de, ate, tipo) {
+    const mapa = {};
+    for (let dia = de; dia <= ate; dia++) {
+        mapa[ano + "-" + String(mes).padStart(2, "0") + "-" + String(dia).padStart(2, "0")] = tipo || "ferias";
+    }
+    return mapa;
+}
+
+// Contornos do calendário real: 1º ago/set (quebra-mês), 2º nov, 3º dez.
+function contornoCalendario2027() {
+    return Object.assign(
+        {},
+        faixa(2027, 8, 23, 31),
+        faixa(2027, 9, 1, 3),
+        faixa(2027, 11, 3, 12),
+        faixa(2027, 12, 10, 17)
+    );
+}
+
+function ilhasFerias(model, mapa) {
+    const off = new Uint8Array(model.baseOff);
+    Object.keys(mapa).forEach((iso) => {
+        const i = model.index.get(iso);
+        if (i != null) off[i] = 1;
+    });
+    const runs = [];
+    let atual = null;
+    model.days.forEach((day) => {
+        if (!day.inYear || mapa[day.iso] !== "ferias") {
+            if (atual) { runs.push(atual); atual = null; }
+            return;
+        }
+        if (!atual) atual = { start: day, end: day, len: 1 };
+        else { atual.end = day; atual.len++; }
+    });
+    if (atual) runs.push(atual);
+    return runs.map((run, idx) => {
+        let kStart = model.index.get(run.start.iso);
+        let kEnd = model.index.get(run.end.iso);
+        while (kStart > 0 && off[kStart - 1]) kStart--;
+        while (kEnd + 1 < model.n && off[kEnd + 1]) kEnd++;
+        const descanso = kEnd - kStart + 1;
+        let gasto = 0;
+        for (let k = kStart; k <= kEnd; k++) {
+            if (model.days[k].inYear && mapa[model.days[k].iso]) gasto++;
+        }
+        const meses = {};
+        for (let k = model.index.get(run.start.iso); k <= model.index.get(run.end.iso); k++) {
+            meses[model.days[k].month] = (meses[model.days[k].month] || 0) + 1;
+        }
+        return {
+            ordem: idx + 1,
+            start: run.start.iso,
+            end: run.end.iso,
+            len: run.len,
+            descanso,
+            ganhos: Math.max(0, descanso - gasto),
+            restStart: model.days[kStart].iso,
+            restEnd: model.days[kEnd].iso,
+            meses
+        };
+    });
+}
+
 test("calendário de 2027 confere Páscoa, Carnaval, Corpus e as pontes", () => {
     assert.deepEqual(Folga.holidaySelfCheck(), []);
 });
@@ -80,6 +144,68 @@ test("um bloco de 30 dias quebra o mês para não passar de 20 no ATIN", () => {
 test("trinta dias dentro de um único mês não têm saída sem perder o ATIN", () => {
     const resultado = Folga.optimize(modelo(), Object.assign({}, base, { mode: 1, from: 3, to: 3 }));
     assert.match(resultado.error, /20 dias/);
+    assert.ok(resultado.diagnosis);
+    assert.equal(resultado.diagnosis.cause, "period");
+    assert.ok(resultado.fallback && resultado.fallback.plans.length);
+    assert.equal(resultado.fallback.applied[0].key, "period");
+    resultado.fallback.plans.forEach((plano) => {
+        assert.equal(plano.feriasDays, 30);
+        assert.equal(plano.atinOk, true);
+        assert.equal(plano.prOk, true);
+    });
+});
+
+test("link de compartilhamento compacto redonda ida e volta e fica bem menor que o JSON", () => {
+    const manual = {};
+    for (let d = 17; d <= 26; d++) manual["2027-05-" + String(d).padStart(2, "0")] = "ferias";
+    for (let d = 8; d <= 17; d++) manual["2027-09-" + String(d).padStart(2, "0")] = "ferias";
+    for (let d = 3; d <= 12; d++) manual["2027-11-" + String(d).padStart(2, "0")] = "ferias";
+    const payload = {
+        year: 2027, period: "all", city: "saopaulo", recesso: "nenhum",
+        feriasTotal: 30, mode: 3, minBlock: 0, minOneBlock: 0,
+        lp: 0, abonadas: 0, eleitoral: 0, escala: 0, expandFixed: false,
+        manual: manual, locked: manual
+    };
+    const compact = Folga.encodeSharePayload(payload);
+    assert.ok(compact.length < 80, compact);
+    assert.ok(compact.length * 4 < JSON.stringify(payload).length);
+    const volta = Folga.decodeSharePayload(compact);
+    assert.equal(volta.year, "2027");
+    assert.equal(volta.period, "all");
+    assert.equal(volta.mode, "3");
+    assert.deepEqual(volta.manual, manual);
+    assert.deepEqual(volta.locked, manual);
+
+    const custom = Folga.encodeSharePayload({
+        year: 2028, period: "custom", monthFrom: 3, monthTo: 8,
+        city: "campinas", recesso: "natal", feriasTotal: 15, mode: 2,
+        minBlock: 5, minOneBlock: 10, lp: 15, abonadas: 2, eleitoral: 1, escala: 3,
+        expandFixed: true, manual: { "2028-03-06": "abonada" }, locked: { "2028-03-06": "bloqueado" }
+    });
+    const dec = Folga.decodeSharePayload(custom);
+    assert.equal(dec.year, "2028");
+    assert.equal(dec.period, "custom");
+    assert.equal(dec.monthFrom, "3");
+    assert.equal(dec.city, "campinas");
+    assert.equal(dec.recesso, "natal");
+    assert.equal(dec.feriasTotal, "15");
+    assert.equal(dec.lp, "15");
+    assert.equal(dec.expandFixed, true);
+    assert.equal(dec.manual["2028-03-06"], "abonada");
+    assert.equal(dec.locked["2028-03-06"], "bloqueado");
+});
+
+test("mínimo de um período longo impossível aponta a trava e oferece busca relaxada", () => {
+    const resultado = Folga.optimize(modelo(), Object.assign({}, base, {
+        mode: 3, minBlock: 10, minOneBlock: 25, abonadas: 0
+    }));
+    assert.ok(resultado.error);
+    assert.ok(resultado.diagnosis);
+    assert.ok(["minOneBlock", "minimos"].indexOf(resultado.diagnosis.cause) !== -1);
+    assert.ok(resultado.fallback && resultado.fallback.plans.length);
+    assert.equal(resultado.fallback.plans[0].feriasDays, 30);
+    const trial = resultado.diagnosis.trials.find((t) => t.key === "minOneBlock");
+    assert.ok(trial && trial.unlocked);
 });
 
 test("exige que ao menos um período tenha no mínimo N dias (ex.: 3 períodos sendo um >= 18)", () => {
@@ -202,6 +328,119 @@ test("permite otimizar quantidade flexível de dias de férias (< 30 dias, ex.: 
         assert.equal(ferias.length, 2);
         assert.equal(ferias.reduce((s, b) => s + b.len, 0), 15);
     });
+});
+
+test("contorno do calendário: 3 períodos de 2027 com quebra ago/set, ATIN e folgas emendadas", () => {
+    const m = modelo();
+    const mapa = contornoCalendario2027();
+    const cfg = Object.assign({}, base, { abonadas: 0 });
+    const rel = Folga.analyze(m, cfg, mapa);
+    const periodos = ilhasFerias(m, mapa);
+
+    assert.equal(Object.keys(mapa).length, 30);
+    assert.equal(rel.feriasDays, 30);
+    assert.equal(rel.spent, 30);
+    assert.equal(rel.atinOk, true);
+    assert.equal(rel.prOk, true);
+    assert.equal(rel.dilOk, true);
+    assert.equal(rel.atinLoss, 0);
+    assert.equal(rel.prLoss, 0);
+    assert.equal(periodos.length, 3);
+
+    // 1º período: 23/08 a 03/09 (9d em agosto + 3d em setembro), emenda até 07/09
+    assert.equal(periodos[0].start, "2027-08-23");
+    assert.equal(periodos[0].end, "2027-09-03");
+    assert.equal(periodos[0].len, 12);
+    assert.equal(periodos[0].meses[7], 9);
+    assert.equal(periodos[0].meses[8], 3);
+    assert.equal(periodos[0].ganhos, 6);
+    assert.equal(periodos[0].descanso, 18);
+    assert.equal(periodos[0].restStart, "2027-08-21");
+    assert.equal(periodos[0].restEnd, "2027-09-07");
+
+    // 2º período: 03/11 a 12/11 (10d), emenda Finados à esquerda e 15/11 à direita
+    assert.equal(periodos[1].start, "2027-11-03");
+    assert.equal(periodos[1].end, "2027-11-12");
+    assert.equal(periodos[1].len, 10);
+    assert.equal(periodos[1].meses[10], 10);
+    assert.equal(periodos[1].ganhos, 7);
+    assert.equal(periodos[1].descanso, 17);
+    assert.equal(periodos[1].restStart, "2027-10-30");
+    assert.equal(periodos[1].restEnd, "2027-11-15");
+
+    // 3º período: 10/12 a 17/12 (8d), só o fim de semana seguinte
+    assert.equal(periodos[2].start, "2027-12-10");
+    assert.equal(periodos[2].end, "2027-12-17");
+    assert.equal(periodos[2].len, 8);
+    assert.equal(periodos[2].meses[11], 8);
+    assert.equal(periodos[2].ganhos, 2);
+    assert.equal(periodos[2].descanso, 10);
+    assert.equal(periodos[2].restStart, "2027-12-10");
+    assert.equal(periodos[2].restEnd, "2027-12-19");
+
+    assert.equal(rel.rest, 18 + 17 + 10);
+    assert.equal(rel.months[7].days, 9);
+    assert.equal(rel.months[8].days, 3);
+    assert.equal(rel.months[10].days, 10);
+    assert.equal(rel.months[11].days, 8);
+    rel.months.forEach((mes) => assert.ok(mes.days <= 20));
+
+    const start = m.days[m.index.get("2027-08-23")];
+    const end = m.days[m.index.get("2027-09-03")];
+    assert.equal(start.dow, 1);
+    assert.equal(end.dow, 5);
+    assert.equal(start.plain, true);
+    assert.equal(end.plain, true);
+});
+
+test("contorno do calendário: feriados e pontes visíveis em 2027 batem com o mapa de São Paulo", () => {
+    const feriados = Folga.buildHolidayMap(2027, "saopaulo", [], {});
+    const esperados = {
+        "2027-05-01": "feriado",
+        "2027-05-27": "feriado",
+        "2027-05-28": "facultativo",
+        "2027-07-09": "feriado",
+        "2027-09-06": "facultativo",
+        "2027-09-07": "feriado",
+        "2027-10-11": "facultativo",
+        "2027-10-12": "feriado",
+        "2027-10-28": "facultativo",
+        "2027-11-01": "facultativo",
+        "2027-11-02": "feriado",
+        "2027-11-15": "feriado",
+        "2027-11-20": "feriado",
+        "2027-12-24": "facultativo",
+        "2027-12-25": "feriado",
+        "2027-12-31": "facultativo"
+    };
+    Object.keys(esperados).forEach((iso) => {
+        const dia = feriados.get(iso);
+        assert.ok(dia, iso);
+        assert.equal(dia.kind, esperados[iso], iso);
+    });
+});
+
+test("contorno do calendário: o plano de 30 dias cabe nas travas e o link compacto preserva as datas", () => {
+    const m = modelo();
+    const mapa = contornoCalendario2027();
+    const resultado = Folga.optimize(m, Object.assign({}, base, { abonadas: 0, mode: 3 }), mapa);
+    assert.equal(resultado.error, undefined);
+    resultado.plans.forEach((plano) => {
+        assert.equal(plano.leaveMap["2027-08-23"], "ferias");
+        assert.equal(plano.leaveMap["2027-09-03"], "ferias");
+        assert.equal(plano.leaveMap["2027-11-03"], "ferias");
+        assert.equal(plano.leaveMap["2027-12-17"], "ferias");
+        assert.equal(plano.feriasDays, 30);
+        assert.equal(plano.atinOk, true);
+    });
+
+    const compact = Folga.encodeSharePayload({
+        year: 2027, period: "all", city: "saopaulo", recesso: "nenhum",
+        feriasTotal: 30, mode: 3, manual: mapa, locked: mapa
+    });
+    const volta = Folga.decodeSharePayload(compact);
+    assert.deepEqual(volta.manual, mapa);
+    assert.ok(compact.length < 90, compact);
 });
 
 test("edge cases: ano bissexto (2028), 1 dia de férias com modo=3, LP fixa < 15d e bloco de 30d cobrindo feriados internos", () => {

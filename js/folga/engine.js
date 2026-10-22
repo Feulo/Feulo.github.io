@@ -1148,7 +1148,7 @@
       });
     }
 
-    function optimize(model, cfg, fixedMap) {
+    function optimizeCore(model, cfg, fixedMap) {
       const expandFixed = Boolean(cfg && cfg.expandFixed);
       const totalFerias = clamp(Number(cfg && cfg.feriasTotal) || 30, 1, 30);
       const fixedInfo = parseFixed(model, fixedMap, expandFixed, totalFerias);
@@ -1200,6 +1200,148 @@
           expanded: expandFixed && fixedFerias.length > 0
         }
       };
+    }
+
+    function hardCalendarError(error) {
+      if (!error) return false;
+      return /marcado no calendário|marcados no calendário|já fixou|saldo configurado|mais de 3 períodos|mais de uma falta|mais de 6 faltas|piso de cada bloco/.test(error);
+    }
+
+    function diagnoseAndRelax(model, cfg, fixedMap) {
+      const trials = [];
+      function addTrial(key, label, suggestion, nextCfg, nextFixed) {
+        trials.push({
+          key: key,
+          label: label,
+          suggestion: suggestion,
+          cfg: nextCfg,
+          fixedMap: nextFixed
+        });
+      }
+      if ((cfg.minOneBlock || 0) > 0) {
+        addTrial(
+          'minOneBlock',
+          'Ao menos 1 período longo',
+          'Reduza "Ao menos 1 período ≥ ' + cfg.minOneBlock + '" para 0.',
+          Object.assign({}, cfg, { minOneBlock: 0 }),
+          fixedMap
+        );
+      }
+      if ((cfg.minBlock || 0) > 0) {
+        addTrial(
+          'minBlock',
+          'Mínimo por período',
+          'Reduza "Mín. por período" de ' + cfg.minBlock + ' para 0.',
+          Object.assign({}, cfg, { minBlock: 0 }),
+          fixedMap
+        );
+      }
+      if ((cfg.minBlock || 0) > 0 && (cfg.minOneBlock || 0) > 0) {
+        addTrial(
+          'minimos',
+          'Mínimos de duração',
+          'Zere os dois mínimos de duração dos períodos.',
+          Object.assign({}, cfg, { minBlock: 0, minOneBlock: 0 }),
+          fixedMap
+        );
+      }
+      if ((cfg.from || 1) > 1 || (cfg.to || 12) < 12) {
+        addTrial(
+          'period',
+          'Período da busca',
+          'Amplie o período da busca para o ano todo (hoje: meses ' + cfg.from + '–' + cfg.to + ').',
+          Object.assign({}, cfg, { from: 1, to: 12 }),
+          fixedMap
+        );
+      }
+      if ((cfg.abonadas || 0) > 0 || (cfg.eleitoral || 0) > 0) {
+        addTrial(
+          'singles',
+          'Folgas de um dia',
+          'Zere abonadas e eleitoral nesta busca — elas podem estourar ATIN, PR ou o piso de diligências.',
+          Object.assign({}, cfg, { abonadas: 0, eleitoral: 0 }),
+          fixedMap
+        );
+      }
+      if ((cfg.lp || 0) > 0) {
+        addTrial(
+          'lp',
+          'Licença-prêmio',
+          'Tire a licença-prêmio desta busca — ela pode estourar o limite de 1/3 da PR.',
+          Object.assign({}, cfg, { lp: 0 }),
+          fixedMap
+        );
+      }
+      const hasMovableFixed = fixedMap && Object.keys(fixedMap).some(function (iso) {
+        return fixedMap[iso] !== 'bloqueado';
+      });
+      if (hasMovableFixed) {
+        const onlyBlocked = {};
+        Object.keys(fixedMap).forEach(function (iso) {
+          if (fixedMap[iso] === 'bloqueado') onlyBlocked[iso] = 'bloqueado';
+        });
+        addTrial(
+          'fixed',
+          'Datas fixadas no calendário',
+          'Solte as férias e folgas fixadas (os dias bloqueados continuam).',
+          cfg,
+          Object.keys(onlyBlocked).length ? onlyBlocked : null
+        );
+      }
+      if (((cfg.from || 1) > 1 || (cfg.to || 12) < 12) && ((cfg.minBlock || 0) > 0 || (cfg.minOneBlock || 0) > 0)) {
+        addTrial(
+          'period+mins',
+          'Período e mínimos',
+          'Amplie a busca para o ano todo e zere os mínimos de duração.',
+          Object.assign({}, cfg, { from: 1, to: 12, minBlock: 0, minOneBlock: 0 }),
+          fixedMap
+        );
+      }
+
+      const tried = [];
+      let fallback = null;
+      for (let t = 0; t < trials.length; t++) {
+        const trial = trials[t];
+        const result = optimizeCore(model, trial.cfg, trial.fixedMap);
+        const unlocked = Boolean(result.plans && result.plans.length);
+        tried.push({
+          key: trial.key,
+          label: trial.label,
+          suggestion: trial.suggestion,
+          unlocked: unlocked
+        });
+        if (unlocked && !fallback) {
+          fallback = {
+            applied: [{ key: trial.key, label: trial.label, suggestion: trial.suggestion }],
+            plans: result.plans,
+            fixedSummary: result.fixedSummary || null,
+            cfg: trial.cfg,
+            dropFixed: trial.key === 'fixed'
+          };
+        }
+      }
+
+      const unlocked = tried.filter(function (row) { return row.unlocked; });
+      return {
+        diagnosis: {
+          cause: unlocked.length ? unlocked[0].key : (tried.length ? 'combinacao' : 'desconhecida'),
+          title: unlocked.length
+            ? 'A trava que impediu a busca foi: ' + unlocked[0].label.toLowerCase() + '.'
+            : 'Nenhuma relaxação simples destravou a busca.',
+          suggestion: unlocked.length
+            ? unlocked[0].suggestion
+            : 'Afrouxe as datas fixadas, os mínimos ou o intervalo, ou reduza o saldo de licença-prêmio e folgas de um dia.',
+          trials: tried
+        },
+        fallback: fallback
+      };
+    }
+
+    function optimize(model, cfg, fixedMap) {
+      const result = optimizeCore(model, cfg, fixedMap);
+      if (result.plans && result.plans.length) return result;
+      if (hardCalendarError(result.error)) return result;
+      return Object.assign({}, result, diagnoseAndRelax(model, cfg, fixedMap));
     }
 
     function pickThree(plans) {
@@ -1276,6 +1418,131 @@
       return errors;
     }
 
+    const SHARE_TYPES = {
+        f: "ferias", p: "lp", a: "abonada", e: "eleitoral",
+        s: "escala", h: "saude", n: "nojo", k: "bloqueado"
+    };
+    const SHARE_CODES = {
+        ferias: "f", lp: "p", abonada: "a", eleitoral: "e",
+        escala: "s", saude: "h", nojo: "n", bloqueado: "k"
+    };
+
+    function doyFromIso(iso) {
+        const [y, m, d] = iso.split("-").map(Number);
+        return Math.round((Date.UTC(y, m - 1, d) - Date.UTC(y, 0, 1)) / DAY) + 1;
+    }
+    function isoFromDoy(year, doy) {
+        return toISO(Date.UTC(Number(year), 0, doy));
+    }
+
+    function encodeRuns(map, year) {
+        if (!map) return "";
+        const prefix = String(year);
+        const isos = Object.keys(map).filter(function (iso) { return iso.slice(0, 4) === prefix; }).sort();
+        const runs = [];
+        isos.forEach(function (iso) {
+            const type = map[iso];
+            const code = SHARE_CODES[type];
+            if (!code) return;
+            const doy = doyFromIso(iso);
+            const last = runs[runs.length - 1];
+            if (last && last.code === code && last.doy + last.len === doy) last.len++;
+            else runs.push({ code: code, doy: doy, len: 1 });
+        });
+        return runs.map(function (r) {
+            return r.code + r.doy + (r.len > 1 ? "x" + r.len : "");
+        }).join(",");
+    }
+
+    function decodeRuns(str, year) {
+        const map = {};
+        if (!str) return map;
+        String(str).split(",").forEach(function (tok) {
+            const m = /^([fpaeshnk])(\d{1,3})(?:x(\d{1,2}))?$/.exec(tok);
+            if (!m) return;
+            const type = SHARE_TYPES[m[1]];
+            const start = Number(m[2]);
+            const len = Number(m[3] || 1);
+            for (let i = 0; i < len && i < 31; i++) {
+                const iso = isoFromDoy(year, start + i);
+                if (iso.slice(0, 4) === String(year)) map[iso] = type;
+            }
+        });
+        return map;
+    }
+
+    function encodeSharePayload(p) {
+        const year = String((p && p.year) || 2027);
+        const bits = ["2", "y" + year.slice(-2)];
+        const period = (p && p.period) || "all";
+        if (period === "custom") {
+            bits.push("q" + (p.monthFrom || 1) + "-" + (p.monthTo || 12));
+        } else if (period !== "all") {
+            bits.push("q" + period);
+        }
+        if (p && p.city && p.city !== "saopaulo") bits.push("c" + p.city);
+        if (p && p.recesso && p.recesso !== "nenhum") bits.push("r" + (p.recesso === "anonovo" ? "a" : "t"));
+        if (p && String(p.feriasTotal || 30) !== "30") bits.push("t" + p.feriasTotal);
+        if (p && String(p.mode || 3) !== "3") bits.push("m" + p.mode);
+        if (p && Number(p.minBlock)) bits.push("b" + p.minBlock);
+        if (p && Number(p.minOneBlock)) bits.push("o" + p.minOneBlock);
+        if (p && Number(p.lp)) bits.push("lp" + p.lp);
+        if (p && Number(p.abonadas)) bits.push("ab" + p.abonadas);
+        if (p && Number(p.eleitoral)) bits.push("el" + p.eleitoral);
+        if (p && Number(p.escala)) bits.push("es" + p.escala);
+        if (p && p.expandFixed) bits.push("x");
+        const ferias = encodeRuns(p && p.manual, year);
+        if (ferias) bits.push("F" + ferias);
+        const locked = encodeRuns(p && p.locked, year);
+        if (locked && locked === ferias) bits.push("K*");
+        else if (locked) bits.push("K" + locked);
+        return bits.join(".");
+    }
+
+    function decodeSharePayload(raw) {
+        if (!raw || typeof raw !== "string") return null;
+        if (raw.charAt(0) === "{") {
+            try { return JSON.parse(raw); } catch (err) { return null; }
+        }
+        const bits = raw.split(".");
+        if (!bits.length || bits[0] !== "2") return null;
+        const out = {
+            year: "2027", period: "all", city: "saopaulo", recesso: "nenhum",
+            feriasTotal: "30", mode: "3", minBlock: "0", minOneBlock: "0",
+            lp: "0", abonadas: "0", eleitoral: "0", escala: "0",
+            expandFixed: false, manual: {}, locked: {}
+        };
+        bits.slice(1).forEach(function (bit) {
+            if (!bit) return;
+            if (bit === "x") { out.expandFixed = true; return; }
+            if (bit === "K*") { out.locked = null; return; }
+            const key = bit.charAt(0);
+            const rest = bit.slice(1);
+            if (key === "y" && /^\d{2}$/.test(rest)) out.year = "20" + rest;
+            else if (key === "q") {
+                const custom = /^(\d{1,2})-(\d{1,2})$/.exec(rest);
+                if (custom) {
+                    out.period = "custom";
+                    out.monthFrom = custom[1];
+                    out.monthTo = custom[2];
+                } else if (/^(s1|s2|q1|q2|q3|q4)$/.test(rest)) out.period = rest;
+            } else if (key === "c" && /^[a-z]+$/.test(rest)) out.city = rest;
+            else if (key === "r") out.recesso = rest === "a" ? "anonovo" : "natal";
+            else if (bit.slice(0, 2) === "lp" && /^\d+$/.test(bit.slice(2))) out.lp = bit.slice(2);
+            else if (bit.slice(0, 2) === "ab" && /^\d+$/.test(bit.slice(2))) out.abonadas = bit.slice(2);
+            else if (bit.slice(0, 2) === "el" && /^\d+$/.test(bit.slice(2))) out.eleitoral = bit.slice(2);
+            else if (bit.slice(0, 2) === "es" && /^\d+$/.test(bit.slice(2))) out.escala = bit.slice(2);
+            else if (key === "t" && /^\d+$/.test(rest)) out.feriasTotal = rest;
+            else if (key === "m" && /^[123]$/.test(rest)) out.mode = rest;
+            else if (key === "b" && /^\d+$/.test(rest)) out.minBlock = rest;
+            else if (key === "o" && /^\d+$/.test(rest)) out.minOneBlock = rest;
+            else if (key === "F") out.manual = decodeRuns(rest, out.year);
+            else if (key === "K") out.locked = decodeRuns(rest, out.year);
+        });
+        if (out.locked === null) out.locked = Object.assign({}, out.manual);
+        return out;
+    }
+
     return {
         MESES,
         SEMANA,
@@ -1291,6 +1558,8 @@
         optimize,
         analyze,
         holidaySelfCheck,
-        countMonths
+        countMonths,
+        encodeSharePayload,
+        decodeSharePayload
     };
 });

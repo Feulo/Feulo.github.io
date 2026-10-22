@@ -29,7 +29,12 @@
         anchor: null,
         plans: [],
         activeId: null,
-        model: null
+        model: null,
+        lastResult: null,
+        history: [],
+        historyIndex: -1,
+        scenarios: [],
+        calTab: "grade"
     };
 
     function esc(valor) {
@@ -143,16 +148,219 @@
         return '<div class="faixa-bloco"><div class="faixa-cabeca"><span>Maior sequência seguida · <strong>' + plan.longest + " dias</strong></span><small>" + Engine.fmt(plan.longestStart) + " → " + Engine.fmt(plan.longestEnd) + '</small></div><div class="faixa">' + html + "</div></div>";
     }
 
+    function renderYearCompare(plans) {
+        if (!plans || plans.length < 2 || !state.model) return "";
+        const rotulos = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
+        const cabeca = '<div class="ano-cabeca"><span class="ano-rotulo"></span><div class="ano-meses">' +
+            rotulos.map(function (m) { return "<span>" + m + "</span>"; }).join("") +
+            '</div><span class="ano-resto"></span></div>';
+        const linhas = plans.map(function (plan, idx) {
+            const ativo = state.activeId === plan.id;
+            const meses = [];
+            for (let mes = 0; mes < 12; mes++) {
+                let cells = "";
+                for (let i = 0; i < state.model.n; i++) {
+                    const day = state.model.days[i];
+                    if (!day.inYear || day.month !== mes) continue;
+                    const leave = plan.leaveMap[day.iso] || "";
+                    let cls = "ano-cel";
+                    if (leave && leave !== "bloqueado") cls += " " + leave;
+                    else if (day.holiday) cls += day.holiday.kind === "feriado" ? " feriado" : " facultativo";
+                    else if (day.weekend) cls += " fds";
+                    cells += '<i class="' + cls + '"></i>';
+                }
+                meses.push('<span class="ano-mes">' + cells + "</span>");
+            }
+            return '<button type="button" class="ano-linha' + (ativo ? " ativo" : "") + '" data-jump="' + idx + '">' +
+                '<span class="ano-rotulo">' + esc(plan.label) + "</span>" +
+                '<span class="ano-trilha">' + meses.join("") + "</span>" +
+                '<strong class="ano-resto">' + plan.rest + "d</strong>" +
+                "</button>";
+        }).join("");
+        return '<div class="faixa-anual">' +
+            '<div class="faixa-anual-topo"><span class="etiqueta">Comparativo anual</span><h3>As três estratégias no mesmo ano</h3></div>' +
+            cabeca + linhas +
+            '<p class="ajuda mb-0">Clique numa faixa para aplicar no calendário. O detalhe dos períodos fica na aba ao lado.</p>' +
+            "</div>";
+    }
+
+    function cardDoPlano(plan, idx) {
+        const ferias = plan.blocks.filter(function (b) { return b.type === "ferias"; }).sort(function (a, b) { return a.start < b.start ? -1 : 1; });
+        const lps = plan.blocks.filter(function (b) { return b.type === "lp"; }).sort(function (a, b) { return a.start < b.start ? -1 : 1; });
+        const itens = ferias.map(function (bloco, i) {
+            const quebra = quebraMes(bloco);
+            const seloFixo = bloco.locked ? ' <em class="selo-fixo"><i class="bi bi-pin-angle-fill"></i> fixado por você</em>' : "";
+            return '<li><span class="tag-tipo ferias">Férias ' + (i + 1) + 'º</span><div class="item-datas"><strong>' +
+                Engine.fmt(bloco.start) + " → " + Engine.fmt(bloco.end) +
+                (i === 0 ? ' <em class="terco">1/3 constitucional</em>' : "") + seloFixo + "</strong><small>" +
+                SEMANA[bloco.startDow] + " a " + SEMANA[bloco.endDow] +
+                (quebra ? " · " + esc(quebra) : "") + '</small></div><strong class="qtd-dias">' + bloco.len + " dias</strong></li>";
+        }).concat(lps.map(function (bloco) {
+            const quebra = quebraMes(bloco);
+            const seloFixo = bloco.locked ? ' <em class="selo-fixo"><i class="bi bi-pin-angle-fill"></i> fixado por você</em>' : "";
+            return '<li><span class="tag-tipo lp">Lic.-prêmio</span><div class="item-datas"><strong>' +
+                Engine.fmt(bloco.start) + " → " + Engine.fmt(bloco.end) + seloFixo + "</strong><small>" +
+                SEMANA[bloco.startDow] + " a " + SEMANA[bloco.endDow] +
+                (quebra ? " · " + esc(quebra) : "") + '</small></div><strong class="qtd-dias">' + bloco.len + " dias</strong></li>";
+        }));
+        ["abonada", "eleitoral", "escala"].forEach(function (tipo) {
+            const datas = (plan.singles || []).filter(function (s) { return s.type === tipo; }).map(function (s) {
+                return Engine.fmt(s.iso) + (s.locked ? " (fixo)" : "");
+            });
+            if (!datas.length) return;
+            itens.push('<li><span class="tag-tipo ' + tipo + '">' + esc(TIPOS[tipo].short) + '</span><div class="item-datas"><strong>' +
+                esc(TIPOS[tipo].label) + "</strong><small>" + datas.join(" · ") + '</small></div><strong class="qtd-dias">' +
+                datas.length + (datas.length > 1 ? " dias" : " dia") + "</strong></li>");
+        });
+        const emendados = plan.rest - plan.spent;
+        const partes = gasto(plan.used);
+        const atinRuim = (plan.months || []).some(function (m) { return m.lost; });
+        const atinAperto = (plan.months || []).some(function (m) { return m.days >= 19 && m.days <= 20; });
+        const seloAtin = atinRuim ? "danger" : atinAperto ? "warn" : "";
+        const textoAtin = atinRuim ? "ATIN zerado em algum mês" : atinAperto ? "ATIN no limite (20 dias)" : "ATIN preservado";
+        const seloPr = plan.prOk ? (plan.prLoss > 0 ? "warn" : "") : "danger";
+        const textoPr = plan.prLoss > 0 ? "Desconto PR: " + brl.format(plan.prLoss) : "PR sem perda (R$ 0)";
+        const meses = (plan.months || []).filter(function (m) { return m.days > 0; }).map(function (m) {
+            return MESES[m.month] + " " + m.days + "/20";
+        }).join(" · ") || "nenhum mês encostou na trava";
+        const tris = (plan.quarters || []).map(function (q) {
+            return (q.q + 1) + "º trimestre: " + q.non + " de " + q.safe + " dias · " + brl.format(q.loss);
+        }).join("<br>");
+        const ordem = idx == null ? "" : (idx + 1) + "ª estratégia";
+        return '<article class="resultado ativo">' +
+            '<div class="resultado-topo">' +
+            '<div class="numero"><strong>' + plan.rest + '</strong><span>dias de descanso</span></div>' +
+            '<div class="resumo-plano">' +
+            '<div class="titulo-linha">' + (ordem ? '<span class="etiqueta">' + ordem + "</span>" : "") + "<h2>" + esc(plan.label) + "</h2></div>" +
+            '<p class="subtitulo-plano">Usando ' + esc(partes.join(", ").replace(/, ([^,]*)$/, " e $1")) + ".</p>" +
+            '<div class="metricas-chips">' +
+            '<span class="chip-metrica verde"><i class="bi bi-stars"></i>+' + emendados + (emendados === 1 ? " dia emendado" : " dias emendados") + "</span>" +
+            '<span class="chip-metrica"><i class="bi bi-calendar-range"></i>Até ' + plan.longest + " dias seguidos</span>" +
+            '<span class="selo ' + seloAtin + '">' + textoAtin + "</span>" +
+            '<span class="selo ' + seloPr + '">' + textoPr + "</span>" +
+            "</div>" +
+            '<p class="ajuda mt-2">' + esc(plan.blurb || "") + (plan.note ? " " + esc(plan.note) : "") + "</p>" +
+            "</div></div>" +
+            faixa(plan) +
+            '<ul class="blocos">' + itens.join("") + "</ul>" +
+            '<div class="rodape-resultado">' +
+            '<details class="detalhe"><summary>Ver conta do ATIN e da PR</summary><p>' + meses + "</p><p>" + tris + "</p><p>Dias de férias ou licença-prêmio em folga que já existia: " + (plan.waste || 0) + ".</p></details>" +
+            "</div></article>";
+    }
+
+    function planoDoCalendario() {
+        if (!state.model || !Object.keys(state.manual).length) return null;
+        const cfg = readConfig();
+        const report = Engine.analyze(state.model, cfg, state.manual);
+        if (!report.spent) return null;
+        const blocks = [];
+        ["ferias", "lp"].forEach(function (tipo) {
+            periodosDeMapa(state.manual, tipo).forEach(function (run) {
+                const i = state.model.index.get(run.start.iso);
+                const j = state.model.index.get(run.end.iso);
+                blocks.push({
+                    type: tipo, start: run.start.iso, end: run.end.iso, len: run.len,
+                    startDow: run.start.dow, endDow: run.end.dow,
+                    locked: Boolean(state.locked[run.start.iso]),
+                    i: i, j: j, counts: Engine.countMonths(state.model, i, j)
+                });
+            });
+        });
+        const singles = [];
+        ["abonada", "eleitoral", "escala"].forEach(function (tipo) {
+            Object.keys(state.manual).sort().forEach(function (iso) {
+                if (state.manual[iso] !== tipo) return;
+                singles.push({ iso: iso, type: tipo, locked: Boolean(state.locked[iso]) });
+            });
+        });
+        return Object.assign(report, {
+            label: "Calendário atual",
+            blurb: "Períodos marcados agora no calendário.",
+            blocks: blocks,
+            singles: singles,
+            leaveMap: state.manual
+        });
+    }
+
+    function syncCalTabs() {
+        const temConteudo = state.plans.length > 0 || Object.keys(state.manual).length > 0;
+        const tabs = document.getElementById("calTabs");
+        if (tabs) tabs.hidden = !temConteudo;
+        if (!temConteudo) state.calTab = "grade";
+        const grade = document.getElementById("calTabGrade");
+        const detalhe = document.getElementById("calTabDetalhe");
+        if (grade) grade.classList.toggle("d-none", state.calTab !== "grade");
+        if (detalhe) detalhe.classList.toggle("d-none", state.calTab !== "detalhe");
+        document.querySelectorAll("[data-cal-tab]").forEach(function (botao) {
+            botao.classList.toggle("ativo", botao.getAttribute("data-cal-tab") === state.calTab);
+        });
+    }
+
+    function renderPlanDetail() {
+        const host = document.getElementById("planDetail");
+        if (!host) return;
+        let plan = null;
+        let idx = null;
+        if (state.plans.length) {
+            idx = state.plans.findIndex(function (p) { return p.id === state.activeId; });
+            if (idx < 0) idx = 0;
+            plan = state.plans[idx];
+        }
+        if (!plan) plan = planoDoCalendario();
+        host.innerHTML = plan
+            ? cardDoPlano(plan, idx)
+            : '<p class="ajuda">Busque as estratégias ou marque o calendário para ver os períodos, a sequência e o efeito no ATIN/PR.</p>';
+        syncCalTabs();
+    }
+
+    function renderDiagnostico(payload) {
+        const erro = payload && payload.error ? payload.error : "Nenhum período dentro das travas.";
+        const d = payload && payload.diagnosis;
+        const fb = payload && payload.fallback;
+        let html = '<div class="diagnostico"><p class="alerta danger m-0">' + esc(erro) + "</p>";
+        if (d) {
+            html += '<div class="diagnostico-corpo"><h3><i class="bi bi-sign-intersection"></i> ' + esc(d.title) + "</h3>";
+            html += "<p>" + esc(d.suggestion) + "</p>";
+            if (d.trials && d.trials.length) {
+                html += '<ul class="diagnostico-travas">';
+                d.trials.forEach(function (t) {
+                    html += '<li class="' + (t.unlocked ? "ok" : "falhou") + '">' +
+                        '<i class="bi ' + (t.unlocked ? "bi-check-circle-fill" : "bi-x-circle") + '"></i>' +
+                        "<span><strong>" + esc(t.label) + "</strong> — " +
+                        (t.unlocked ? "destravaria a busca. " + esc(t.suggestion) : "relaxar isto sozinho não basta.") +
+                        "</span></li>";
+                });
+                html += "</ul>";
+            }
+            html += "</div>";
+        }
+        if (fb && fb.plans && fb.plans.length) {
+            const melhor = fb.plans[0];
+            const rotulo = fb.applied && fb.applied[0] ? fb.applied[0].label : "busca relaxada";
+            html += '<button type="button" class="usar-relaxada" data-apply-fallback="1">' +
+                '<i class="bi bi-magic"></i> Usar busca relaxada · ' + esc(rotulo) +
+                " · " + melhor.rest + " dias de descanso</button>";
+        }
+        html += "</div>";
+        return html;
+    }
+
     function renderScenarios(payload) {
         const host = document.getElementById("scenarios");
+        const picker = document.getElementById("estrategias");
         if (!payload || payload.error) {
-            host.innerHTML = '<p class="alerta danger mt-3">' + esc(payload && payload.error ? payload.error : "Nenhum período dentro das travas.") + "</p>";
+            host.innerHTML = renderDiagnostico(payload);
+            if (picker) picker.innerHTML = "";
+            renderPlanDetail();
             return;
         }
         if (!payload.plans.length) {
             host.innerHTML = '<p class="alerta mt-3">Nenhum período dentro das travas.</p>';
+            if (picker) picker.innerHTML = "";
+            renderPlanDetail();
             return;
         }
+        host.innerHTML = "";
         const atalhos = payload.plans.map(function (plan, idx) {
             const emendados = plan.rest - plan.spent;
             const ativo = state.activeId === plan.id;
@@ -163,71 +371,10 @@
                 "<small>+" + emendados + " dias emendados · seq. " + plan.longest + "d</small>" +
                 "</button>";
         }).join("");
-        const cards = payload.plans.map(function (plan, idx) {
-            const ferias = plan.blocks.filter(function (b) { return b.type === "ferias"; }).sort(function (a, b) { return a.start < b.start ? -1 : 1; });
-            const lps = plan.blocks.filter(function (b) { return b.type === "lp"; }).sort(function (a, b) { return a.start < b.start ? -1 : 1; });
-            const itens = ferias.map(function (bloco, i) {
-                const quebra = quebraMes(bloco);
-                const seloFixo = bloco.locked ? ' <em class="selo-fixo"><i class="bi bi-pin-angle-fill"></i> fixado por você</em>' : "";
-                return '<li><span class="tag-tipo ferias">Férias ' + (i + 1) + 'º</span><div class="item-datas"><strong>' +
-                    Engine.fmt(bloco.start) + " → " + Engine.fmt(bloco.end) +
-                    (i === 0 ? ' <em class="terco">1/3 constitucional</em>' : "") + seloFixo + "</strong><small>" +
-                    SEMANA[bloco.startDow] + " a " + SEMANA[bloco.endDow] +
-                    (quebra ? " · " + esc(quebra) : "") + '</small></div><strong class="qtd-dias">' + bloco.len + " dias</strong></li>";
-            }).concat(lps.map(function (bloco) {
-                const quebra = quebraMes(bloco);
-                const seloFixo = bloco.locked ? ' <em class="selo-fixo"><i class="bi bi-pin-angle-fill"></i> fixado por você</em>' : "";
-                return '<li><span class="tag-tipo lp">Lic.-prêmio</span><div class="item-datas"><strong>' +
-                    Engine.fmt(bloco.start) + " → " + Engine.fmt(bloco.end) + seloFixo + "</strong><small>" +
-                    SEMANA[bloco.startDow] + " a " + SEMANA[bloco.endDow] +
-                    (quebra ? " · " + esc(quebra) : "") + '</small></div><strong class="qtd-dias">' + bloco.len + " dias</strong></li>";
-            }));
-            ["abonada", "eleitoral", "escala"].forEach(function (tipo) {
-                const datas = plan.singles.filter(function (s) { return s.type === tipo; }).map(function (s) {
-                    return Engine.fmt(s.iso) + (s.locked ? " (fixo)" : "");
-                });
-                if (!datas.length) return;
-                itens.push('<li><span class="tag-tipo ' + tipo + '">' + esc(TIPOS[tipo].short) + '</span><div class="item-datas"><strong>' +
-                    esc(TIPOS[tipo].label) + "</strong><small>" + datas.join(" · ") + '</small></div><strong class="qtd-dias">' +
-                    datas.length + (datas.length > 1 ? " dias" : " dia") + "</strong></li>");
-            });
-            const emendados = plan.rest - plan.spent;
-            const partes = gasto(plan.used);
-            const atinRuim = plan.months.some(function (m) { return m.lost; });
-            const atinAperto = plan.months.some(function (m) { return m.days >= 19 && m.days <= 20; });
-            const seloAtin = atinRuim ? "danger" : atinAperto ? "warn" : "";
-            const textoAtin = atinRuim ? "ATIN zerado em algum mês" : atinAperto ? "ATIN no limite (20 dias)" : "ATIN preservado";
-            const seloPr = plan.prOk ? (plan.prLoss > 0 ? "warn" : "") : "danger";
-            const textoPr = plan.prLoss > 0 ? "Desconto PR: " + brl.format(plan.prLoss) : "PR sem perda (R$ 0)";
-            const meses = plan.months.filter(function (m) { return m.days > 0; }).map(function (m) {
-                return MESES[m.month] + " " + m.days + "/20";
-            }).join(" · ") || "nenhum mês encostou na trava";
-            const tris = plan.quarters.map(function (q) {
-                return (q.q + 1) + "º trimestre: " + q.non + " de " + q.safe + " dias · " + brl.format(q.loss);
-            }).join("<br>");
-            const ativo = state.activeId === plan.id;
-            return '<article class="resultado' + (ativo ? " ativo" : "") + '" data-plan="' + idx + '">' +
-                '<div class="resultado-topo">' +
-                '<div class="numero"><strong>' + plan.rest + '</strong><span>dias de descanso</span></div>' +
-                '<div class="resumo-plano">' +
-                '<div class="titulo-linha"><span class="etiqueta">' + (idx + 1) + 'ª estratégia</span><h2>' + esc(plan.label) + '</h2></div>' +
-                '<p class="subtitulo-plano">Usando ' + esc(partes.join(", ").replace(/, ([^,]*)$/, " e $1")) + ".</p>" +
-                '<div class="metricas-chips">' +
-                '<span class="chip-metrica verde"><i class="bi bi-stars"></i>+' + emendados + (emendados === 1 ? " dia emendado" : " dias emendados") + "</span>" +
-                '<span class="chip-metrica"><i class="bi bi-calendar-range"></i>Até ' + plan.longest + " dias seguidos</span>" +
-                '<span class="selo ' + seloAtin + '">' + textoAtin + "</span>" +
-                '<span class="selo ' + seloPr + '">' + textoPr + "</span>" +
-                "</div>" +
-                '<p class="ajuda mt-2">' + esc(plan.blurb) + (plan.note ? " " + esc(plan.note) : "") + "</p>" +
-                "</div></div>" +
-                faixa(plan) +
-                '<ul class="blocos">' + itens.join("") + "</ul>" +
-                '<div class="rodape-resultado">' +
-                '<details class="detalhe"><summary>Ver conta do ATIN e da PR</summary><p>' + meses + "</p><p>" + tris + "</p><p>Dias de férias ou licença-prêmio em folga que já existia: " + plan.waste + ".</p></details>" +
-                '<button type="button" class="usar' + (ativo ? " aplicado" : "") + '" data-apply="' + idx + '"><i class="bi ' + (ativo ? "bi-check2-circle" : "bi-calendar2-plus") + '"></i> ' + (ativo ? "Aplicado no calendário" : "Aplicar no calendário") + "</button>" +
-                "</div></article>";
-        }).join("");
-        host.innerHTML = '<div class="comparar">' + atalhos + '</div><div class="resultados">' + cards + "</div>";
+        if (picker) {
+            picker.innerHTML = renderYearCompare(payload.plans) + '<div class="comparar">' + atalhos + "</div>";
+        }
+        renderPlanDetail();
     }
 
     function zona(dias) {
@@ -444,6 +591,7 @@
         renderValidation(report, cfg);
         renderLockedControls();
         renderPdfSummary(report, cfg);
+        renderPlanDetail();
     }
 
     function periodos(tipo) {
@@ -609,6 +757,10 @@
 
     function vazio() {
         document.getElementById("scenarios").innerHTML = '<p class="aviso-calc" style="text-align:center;margin-top:1rem">Clique em <strong>Buscar melhores períodos</strong> para gerar as 3 estratégias.</p>';
+        const picker = document.getElementById("estrategias");
+        if (picker) picker.innerHTML = "";
+        state.calTab = "grade";
+        renderPlanDetail();
     }
 
     function rebuild() {
@@ -617,11 +769,13 @@
         state.model = Engine.buildModel(cfg.year, Engine.buildHolidayMap(cfg.year, cfg.city, state.custom, state.disabled, cfg.recesso));
         state.plans = [];
         state.activeId = null;
+        state.lastResult = null;
         renderChrome();
         renderHolidayList();
         renderCalendar();
         renderFinance();
         vazio();
+        seedHistory();
         document.getElementById("calcMsg").textContent = "";
     }
 
@@ -667,6 +821,7 @@
         atualizarDicaPintura();
         renderCalendar();
         renderFinance();
+        pushHistory();
         save();
     }
 
@@ -695,6 +850,230 @@
         return limpo;
     }
 
+    function snapshotCal() {
+        return {
+            manual: Object.assign({}, state.manual),
+            locked: Object.assign({}, state.locked),
+            expandFixed: state.expandFixed,
+            activeId: state.activeId
+        };
+    }
+
+    function snapsIguais(a, b) {
+        if (!a || !b) return false;
+        if (a.expandFixed !== b.expandFixed || a.activeId !== b.activeId) return false;
+        const ka = Object.keys(a.manual);
+        const kb = Object.keys(b.manual);
+        if (ka.length !== kb.length) return false;
+        for (let i = 0; i < ka.length; i++) {
+            if (a.manual[ka[i]] !== b.manual[ka[i]]) return false;
+        }
+        const la = Object.keys(a.locked);
+        const lb = Object.keys(b.locked);
+        if (la.length !== lb.length) return false;
+        for (let i = 0; i < la.length; i++) {
+            if (a.locked[la[i]] !== b.locked[la[i]]) return false;
+        }
+        return true;
+    }
+
+    function atualizarUndoRedo() {
+        const undo = document.getElementById("undoBtn");
+        const redo = document.getElementById("redoBtn");
+        if (undo) undo.disabled = state.historyIndex <= 0;
+        if (redo) redo.disabled = state.historyIndex >= state.history.length - 1;
+    }
+
+    function pushHistory() {
+        const snap = snapshotCal();
+        if (snapsIguais(state.history[state.historyIndex], snap)) return;
+        state.history = state.history.slice(0, state.historyIndex + 1);
+        state.history.push(snap);
+        if (state.history.length > 40) state.history.shift();
+        state.historyIndex = state.history.length - 1;
+        atualizarUndoRedo();
+    }
+
+    function seedHistory() {
+        state.history = [snapshotCal()];
+        state.historyIndex = 0;
+        atualizarUndoRedo();
+    }
+
+    function aplicarSnap(snap) {
+        state.manual = Object.assign({}, snap.manual);
+        state.locked = Object.assign({}, snap.locked);
+        state.expandFixed = Boolean(snap.expandFixed);
+        state.activeId = snap.activeId || null;
+        state.rangeStart = null;
+        atualizarDicaPintura();
+        renderCalendar();
+        renderFinance();
+        if (state.plans.length) renderScenarios({ plans: state.plans });
+        save();
+        atualizarUndoRedo();
+    }
+
+    function undo() {
+        if (state.historyIndex <= 0) return;
+        state.historyIndex--;
+        aplicarSnap(state.history[state.historyIndex]);
+    }
+
+    function redo() {
+        if (state.historyIndex >= state.history.length - 1) return;
+        state.historyIndex++;
+        aplicarSnap(state.history[state.historyIndex]);
+    }
+
+    function snapshotCenario() {
+        const dados = {
+            manual: Object.assign({}, state.manual),
+            locked: Object.assign({}, state.locked),
+            expandFixed: state.expandFixed
+        };
+        ["year", "period", "monthFrom", "monthTo", "feriasTotal", "minBlock", "minOneBlock", "lp", "abonadas", "eleitoral", "escala", "city", "recesso"].forEach(function (id) {
+            dados[id] = document.getElementById(id).value;
+        });
+        dados.mode = (document.querySelector('input[name="feriasMode"]:checked') || {}).value;
+        return dados;
+    }
+
+    function sanitizarCenarios(lista) {
+        if (!Array.isArray(lista)) return [];
+        return lista.filter(function (c) {
+            return c && typeof c.id === "string" && typeof c.name === "string" && c.snapshot && typeof c.snapshot === "object";
+        }).slice(0, 20).map(function (c) {
+            return {
+                id: String(c.id).slice(0, 40),
+                name: String(c.name).slice(0, 60),
+                savedAt: c.savedAt || "",
+                snapshot: {
+                    manual: sanitizarMapa(c.snapshot.manual),
+                    locked: sanitizarMapa(c.snapshot.locked),
+                    expandFixed: Boolean(c.snapshot.expandFixed),
+                    year: c.snapshot.year,
+                    period: c.snapshot.period,
+                    monthFrom: c.snapshot.monthFrom,
+                    monthTo: c.snapshot.monthTo,
+                    feriasTotal: c.snapshot.feriasTotal,
+                    minBlock: c.snapshot.minBlock,
+                    minOneBlock: c.snapshot.minOneBlock,
+                    lp: c.snapshot.lp,
+                    abonadas: c.snapshot.abonadas,
+                    eleitoral: c.snapshot.eleitoral,
+                    escala: c.snapshot.escala,
+                    city: c.snapshot.city,
+                    recesso: c.snapshot.recesso,
+                    mode: c.snapshot.mode
+                }
+            };
+        });
+    }
+
+    function renderScenariosList() {
+        const sel = document.getElementById("scenarioSelect");
+        if (!sel) return;
+        const atual = sel.value;
+        sel.innerHTML = '<option value="">Cenários salvos…</option>' + state.scenarios.map(function (s) {
+            return '<option value="' + esc(s.id) + '">' + esc(s.name) + "</option>";
+        }).join("");
+        if (atual && state.scenarios.some(function (s) { return s.id === atual; })) sel.value = atual;
+        atualizarBotoesCenario();
+    }
+
+    function atualizarBotoesCenario() {
+        const tem = Boolean(document.getElementById("scenarioSelect").value);
+        document.getElementById("scenarioRenameBtn").disabled = !tem;
+        document.getElementById("scenarioDeleteBtn").disabled = !tem;
+    }
+
+    function salvarCenario() {
+        const padrao = "Plano " + new Date().toLocaleDateString("pt-BR") +
+            (state.plans[0] ? " · " + state.plans[0].rest + "d" : Object.keys(state.manual).length ? " · calendário" : "");
+        const nome = window.prompt("Nome deste cenário:", padrao);
+        if (!nome || !nome.trim()) return;
+        const id = "c" + Date.now();
+        state.scenarios.push({
+            id: id,
+            name: nome.trim().slice(0, 60),
+            savedAt: new Date().toISOString(),
+            snapshot: snapshotCenario()
+        });
+        if (state.scenarios.length > 20) state.scenarios = state.scenarios.slice(-20);
+        save();
+        renderScenariosList();
+        document.getElementById("scenarioSelect").value = id;
+        atualizarBotoesCenario();
+    }
+
+    function carregarCenario(id) {
+        const cenario = state.scenarios.filter(function (s) { return s.id === id; })[0];
+        if (!cenario) return;
+        const d = cenario.snapshot;
+        ["year", "period", "monthFrom", "monthTo", "feriasTotal", "minBlock", "minOneBlock", "lp", "abonadas", "eleitoral", "escala", "city", "recesso"].forEach(function (campo) {
+            if (d[campo] != null && document.getElementById(campo)) document.getElementById(campo).value = String(d[campo]);
+        });
+        if (d.mode && ["1", "2", "3"].indexOf(String(d.mode)) !== -1) {
+            const radio = document.querySelector('input[name="feriasMode"][value="' + d.mode + '"]');
+            if (radio) radio.checked = true;
+        }
+        state.manual = sanitizarMapa(d.manual);
+        state.locked = sanitizarMapa(d.locked);
+        state.expandFixed = Boolean(d.expandFixed);
+        state.plans = [];
+        state.activeId = null;
+        state.lastResult = null;
+        const cfg = readConfig();
+        state.model = Engine.buildModel(cfg.year, Engine.buildHolidayMap(cfg.year, cfg.city, state.custom, state.disabled, cfg.recesso));
+        renderChrome();
+        renderHolidayList();
+        renderCalendar();
+        renderFinance();
+        vazio();
+        pushHistory();
+        save();
+    }
+
+    function aplicarFallback() {
+        const fb = state.lastResult && state.lastResult.fallback;
+        if (!fb || !fb.plans || !fb.plans.length) return;
+        const keys = (fb.applied || []).map(function (a) { return a.key; });
+        if (keys.indexOf("period") !== -1 || keys.indexOf("period+mins") !== -1) {
+            document.getElementById("period").value = "all";
+        }
+        if (keys.indexOf("minOneBlock") !== -1 || keys.indexOf("minimos") !== -1 || keys.indexOf("period+mins") !== -1) {
+            document.getElementById("minOneBlock").value = "0";
+        }
+        if (keys.indexOf("minBlock") !== -1 || keys.indexOf("minimos") !== -1 || keys.indexOf("period+mins") !== -1) {
+            document.getElementById("minBlock").value = "0";
+        }
+        if (keys.indexOf("lp") !== -1) document.getElementById("lp").value = "0";
+        if (keys.indexOf("singles") !== -1) {
+            document.getElementById("abonadas").value = "0";
+            document.getElementById("eleitoral").value = "0";
+        }
+        if (fb.dropFixed) {
+            const onlyBlocked = {};
+            Object.keys(state.locked).forEach(function (iso) {
+                if (state.locked[iso] === "bloqueado") onlyBlocked[iso] = "bloqueado";
+            });
+            state.locked = onlyBlocked;
+        }
+        state.plans = fb.plans;
+        state.manual = Object.assign({}, fb.plans[0].leaveMap);
+        state.activeId = fb.plans[0].id;
+        state.lastResult = { plans: fb.plans, fixedSummary: fb.fixedSummary };
+        renderChrome();
+        renderScenarios(state.lastResult);
+        renderCalendar();
+        renderFinance();
+        pushHistory();
+        save();
+        document.getElementById("calcMsg").textContent = "Busca relaxada aplicada no calendário. Ajuste os parâmetros se quiser manter essa trava solta.";
+        document.getElementById("calSection").scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
     function save() {
         try {
             const dados = {
@@ -711,6 +1090,7 @@
             });
             dados.pr = document.getElementById("prValor").value;
             dados.mode = (document.querySelector('input[name="feriasMode"]:checked') || {}).value;
+            dados.scenarios = state.scenarios;
             localStorage.setItem("afre-folga-v2", JSON.stringify(dados));
         } catch (err) { /* armazenamento indisponível */ }
     }
@@ -742,41 +1122,53 @@
                 });
             }
             state.paint = (dados.paint && (TIPOS[dados.paint] || dados.paint === "apagar")) ? dados.paint : "ferias";
+            state.scenarios = sanitizarCenarios(dados.scenarios);
             if (dados.theme === "dark") document.body.classList.add("tema-escuro");
             if (dados.theme === "light") document.body.classList.remove("tema-escuro");
         } catch (err) { /* preferência antiga ou inválida */ }
     }
 
+    function aplicarDadosCompartilhados(dados) {
+        if (!dados || typeof dados !== "object") return false;
+        ["year", "period", "monthFrom", "monthTo", "feriasTotal", "minBlock", "minOneBlock", "lp", "abonadas", "eleitoral", "escala", "city", "recesso"].forEach(function (id) {
+            if (dados[id] != null && document.getElementById(id)) document.getElementById(id).value = String(dados[id]);
+        });
+        if (dados.mode && ["1", "2", "3"].indexOf(String(dados.mode)) !== -1) {
+            const radio = document.querySelector('input[name="feriasMode"][value="' + dados.mode + '"]');
+            if (radio) radio.checked = true;
+        }
+        state.manual = sanitizarMapa(dados.manual);
+        state.locked = sanitizarMapa(dados.locked);
+        state.expandFixed = Boolean(dados.expandFixed);
+        return true;
+    }
+
     function restaurarDaUrl() {
         try {
             const hash = location.hash ? location.hash.slice(1) : "";
-            if (!hash || hash.indexOf("plano=") === -1) return false;
+            if (!hash) return false;
+            if (hash.indexOf("p=") === 0 || hash.indexOf("&p=") !== -1 || hash.indexOf("?p=") !== -1) {
+                const params = new URLSearchParams(hash);
+                const compact = params.get("p");
+                if (compact) return aplicarDadosCompartilhados(Engine.decodeSharePayload(compact));
+            }
+            if (hash.indexOf("plano=") === -1) return false;
             const params = new URLSearchParams(hash);
             const raw = params.get("plano");
             if (!raw) return false;
             const json = decodeURIComponent(escape(atob(raw)));
-            const dados = JSON.parse(json);
-            if (!dados || typeof dados !== "object") return false;
-            ["year", "period", "monthFrom", "monthTo", "feriasTotal", "minBlock", "minOneBlock", "lp", "abonadas", "eleitoral", "escala", "city", "recesso"].forEach(function (id) {
-                if (dados[id] != null && document.getElementById(id)) document.getElementById(id).value = String(dados[id]);
-            });
-            if (dados.mode && ["1", "2", "3"].indexOf(String(dados.mode)) !== -1) {
-                const radio = document.querySelector('input[name="feriasMode"][value="' + dados.mode + '"]');
-                if (radio) radio.checked = true;
-            }
-            state.manual = sanitizarMapa(dados.manual);
-            state.locked = sanitizarMapa(dados.locked);
-            state.expandFixed = Boolean(dados.expandFixed);
-            return true;
+            return aplicarDadosCompartilhados(JSON.parse(json));
         } catch (err) {
             return false;
         }
     }
 
     function gerarLinkCompartilhamento() {
-        const payload = {
+        const compact = Engine.encodeSharePayload({
             year: document.getElementById("year").value,
             period: document.getElementById("period").value,
+            monthFrom: document.getElementById("monthFrom").value,
+            monthTo: document.getElementById("monthTo").value,
             city: document.getElementById("city").value,
             recesso: document.getElementById("recesso").value,
             feriasTotal: document.getElementById("feriasTotal").value,
@@ -790,9 +1182,8 @@
             manual: state.manual,
             locked: state.locked,
             expandFixed: state.expandFixed
-        };
-        const b64 = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
-        return location.origin + location.pathname + "#plano=" + b64;
+        });
+        return location.origin + location.pathname + "#p=" + compact;
     }
 
     function proximoDiaIso(iso) {
@@ -878,6 +1269,9 @@
         state.plans = [];
         state.activeId = null;
         document.getElementById("scenarios").innerHTML = '<p class="aviso-calc" style="text-align:center;margin-top:1rem">' + texto + "</p>";
+        const picker = document.getElementById("estrategias");
+        if (picker) picker.innerHTML = "";
+        renderPlanDetail();
     }
 
     function aplicarPlano(idx, scrollToCalendar) {
@@ -888,6 +1282,7 @@
         renderScenarios({ plans: state.plans });
         renderCalendar();
         renderFinance();
+        pushHistory();
         save();
         if (scrollToCalendar) {
             document.getElementById("calendar").scrollIntoView({ behavior: "smooth", block: "start" });
@@ -904,6 +1299,7 @@
         setTimeout(function () {
             try {
                 const resultado = Engine.optimize(state.model, readConfig(), fixedMap);
+                state.lastResult = resultado;
                 state.plans = resultado.plans || [];
                 if (state.plans.length) {
                     state.manual = Object.assign({}, state.plans[0].leaveMap);
@@ -911,6 +1307,7 @@
                     renderScenarios(resultado);
                     renderCalendar();
                     renderFinance();
+                    pushHistory();
                     save();
                 } else {
                     state.activeId = null;
@@ -919,11 +1316,13 @@
                 if (resultado.error) {
                     msg.textContent = "";
                 } else if (fixedMap) {
-                    msg.textContent = "1ª estratégia já aplicada no calendário abaixo · Clique nos cartões para alternar.";
+                    msg.textContent = "1ª estratégia já no calendário. Alterne nas faixas ou abra Detalhe da estratégia.";
                 } else {
-                    msg.textContent = "1ª estratégia (Máximo descanso) já aplicada no calendário abaixo · Clique nos cartões para alternar.";
+                    msg.textContent = "1ª estratégia (Máximo descanso) já no calendário. Alterne nas faixas ou abra Detalhe da estratégia.";
                 }
-                if (scrollToResults) {
+                if (state.plans.length) {
+                    document.getElementById("calSection").scrollIntoView({ behavior: "smooth", block: "start" });
+                } else if (scrollToResults || resultado.error) {
                     document.getElementById("scenarios").scrollIntoView({ behavior: "smooth", block: "start" });
                 }
             } catch (err) {
@@ -977,6 +1376,7 @@
         rotuloTema();
         syncTintas();
         atualizarDicaPintura();
+        renderScenariosList();
         rebuild();
     }
 
@@ -1050,6 +1450,7 @@
         atualizarDicaPintura();
         renderCalendar();
         renderFinance();
+        pushHistory();
         save();
     });
     function dispararOtimizacaoRestante() {
@@ -1071,6 +1472,7 @@
         if (modoBtn) {
             state.expandFixed = modoBtn.getAttribute("data-expand-fixed") === "true";
             renderLockedControls();
+            pushHistory();
             save();
             if (state.plans.length) executarBusca(false);
             return;
@@ -1080,20 +1482,25 @@
         if (!state.activeId) state.manual = {};
         renderCalendar();
         renderFinance();
+        pushHistory();
         save();
     });
     document.getElementById("scenarios").addEventListener("click", function (ev) {
-        const salto = ev.target.closest("[data-jump]");
-        if (salto) {
-            const idx = Number(salto.getAttribute("data-jump"));
-            aplicarPlano(idx, false);
-            const card = document.querySelector('[data-plan="' + idx + '"]');
-            if (card) card.scrollIntoView({ behavior: "smooth", block: "start" });
+        if (ev.target.closest("[data-apply-fallback]")) {
+            aplicarFallback();
             return;
         }
-        const botao = ev.target.closest("[data-apply]");
+    });
+    document.getElementById("estrategias").addEventListener("click", function (ev) {
+        const salto = ev.target.closest("[data-jump]");
+        if (!salto) return;
+        aplicarPlano(Number(salto.getAttribute("data-jump")), false);
+    });
+    document.getElementById("calTabs").addEventListener("click", function (ev) {
+        const botao = ev.target.closest("[data-cal-tab]");
         if (!botao) return;
-        aplicarPlano(Number(botao.getAttribute("data-apply")), true);
+        state.calTab = botao.getAttribute("data-cal-tab") === "detalhe" ? "detalhe" : "grade";
+        renderPlanDetail();
     });
     document.getElementById("busca").addEventListener("submit", function (ev) {
         ev.preventDefault();
@@ -1152,6 +1559,45 @@
         state.disabled = {};
         rebuild();
         save();
+    });
+    document.getElementById("undoBtn").addEventListener("click", undo);
+    document.getElementById("redoBtn").addEventListener("click", redo);
+    document.getElementById("scenarioSaveBtn").addEventListener("click", salvarCenario);
+    document.getElementById("scenarioSelect").addEventListener("change", function () {
+        atualizarBotoesCenario();
+        if (this.value) carregarCenario(this.value);
+    });
+    document.getElementById("scenarioRenameBtn").addEventListener("click", function () {
+        const id = document.getElementById("scenarioSelect").value;
+        const cenario = state.scenarios.filter(function (s) { return s.id === id; })[0];
+        if (!cenario) return;
+        const nome = window.prompt("Novo nome do cenário:", cenario.name);
+        if (!nome || !nome.trim()) return;
+        cenario.name = nome.trim().slice(0, 60);
+        save();
+        renderScenariosList();
+        document.getElementById("scenarioSelect").value = id;
+        atualizarBotoesCenario();
+    });
+    document.getElementById("scenarioDeleteBtn").addEventListener("click", function () {
+        const id = document.getElementById("scenarioSelect").value;
+        if (!id) return;
+        state.scenarios = state.scenarios.filter(function (s) { return s.id !== id; });
+        save();
+        renderScenariosList();
+    });
+    document.addEventListener("keydown", function (ev) {
+        const tag = (ev.target && ev.target.tagName) || "";
+        if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+        if (!(ev.ctrlKey || ev.metaKey)) return;
+        if (ev.key === "z" || ev.key === "Z") {
+            ev.preventDefault();
+            if (ev.shiftKey) redo();
+            else undo();
+        } else if (ev.key === "y" || ev.key === "Y") {
+            ev.preventDefault();
+            redo();
+        }
     });
 
     init();
