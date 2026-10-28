@@ -171,14 +171,17 @@
                 }
                 meses.push('<span class="ano-mes">' + cells + "</span>");
             }
+            const marca = plan.label === "Máximo dias úteis" && plan.feriasUteis
+                ? plan.feriasUteis + "ú"
+                : plan.rest + "d";
             return '<button type="button" class="ano-linha' + (ativo ? " ativo" : "") + '" data-jump="' + idx + '">' +
                 '<span class="ano-rotulo">' + esc(plan.label) + "</span>" +
                 '<span class="ano-trilha">' + meses.join("") + "</span>" +
-                '<strong class="ano-resto">' + plan.rest + "d</strong>" +
+                '<strong class="ano-resto">' + marca + "</strong>" +
                 "</button>";
         }).join("");
         return '<div class="faixa-anual">' +
-            '<div class="faixa-anual-topo"><span class="etiqueta">Comparativo anual</span><h3>As três estratégias no mesmo ano</h3></div>' +
+            '<div class="faixa-anual-topo"><span class="etiqueta">Comparativo anual</span><h3>As estratégias no mesmo ano</h3></div>' +
             cabeca + linhas +
             '<p class="ajuda mb-0">Clique numa faixa para aplicar no calendário. O detalhe dos períodos fica na aba ao lado.</p>' +
             "</div>";
@@ -235,6 +238,7 @@
             '<p class="subtitulo-plano">Usando ' + esc(partes.join(", ").replace(/, ([^,]*)$/, " e $1")) + ".</p>" +
             '<div class="metricas-chips">' +
             '<span class="chip-metrica verde"><i class="bi bi-stars"></i>+' + emendados + (emendados === 1 ? " dia emendado" : " dias emendados") + "</span>" +
+            (plan.feriasUteis ? '<span class="chip-metrica"><i class="bi bi-briefcase"></i>' + plan.feriasUteis + " dias úteis de férias</span>" : "") +
             '<span class="chip-metrica"><i class="bi bi-calendar-range"></i>Até ' + plan.longest + " dias seguidos</span>" +
             '<span class="selo ' + seloAtin + '">' + textoAtin + "</span>" +
             '<span class="selo ' + seloPr + '">' + textoPr + "</span>" +
@@ -364,11 +368,17 @@
         const atalhos = payload.plans.map(function (plan, idx) {
             const emendados = plan.rest - plan.spent;
             const ativo = state.activeId === plan.id;
+            const focaUteis = plan.label === "Máximo dias úteis";
+            const numero = focaUteis ? (plan.feriasUteis || 0) : plan.rest;
+            const rotuloNumero = focaUteis ? "dias úteis de férias" : "dias de descanso";
+            const extra = focaUteis
+                ? plan.rest + "d descanso · seq. " + plan.longest + "d"
+                : "+" + emendados + " dias emendados · seq. " + plan.longest + "d" + (plan.feriasUteis ? " · " + plan.feriasUteis + " úteis" : "");
             return '<button type="button" class="atalho' + (ativo ? " preferido" : "") + '" data-jump="' + idx + '">' +
                 "<em>" + esc(plan.label) + (ativo ? ' · <i class="bi bi-check2-circle"></i> No calendário' : "") + "</em>" +
-                "<strong>" + plan.rest + "</strong>" +
-                "<span>dias de descanso</span>" +
-                "<small>+" + emendados + " dias emendados · seq. " + plan.longest + "d</small>" +
+                "<strong>" + numero + "</strong>" +
+                "<span>" + rotuloNumero + "</span>" +
+                "<small>" + extra + "</small>" +
                 "</button>";
         }).join("");
         if (picker) {
@@ -756,7 +766,7 @@
     }
 
     function vazio() {
-        document.getElementById("scenarios").innerHTML = '<p class="aviso-calc" style="text-align:center;margin-top:1rem">Clique em <strong>Buscar melhores períodos</strong> para gerar as 3 estratégias.</p>';
+        document.getElementById("scenarios").innerHTML = '<p class="aviso-calc" style="text-align:center;margin-top:1rem">Clique em <strong>Buscar melhores períodos</strong> para gerar as estratégias.</p>';
         const picker = document.getElementById("estrategias");
         if (picker) picker.innerHTML = "";
         state.calTab = "grade";

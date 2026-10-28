@@ -95,10 +95,13 @@ test("calendário de 2027 confere Páscoa, Carnaval, Corpus e as pontes", () => 
 test("a busca devolve descanso em dias e respeita férias, ATIN e PR", () => {
     const resultado = Folga.optimize(modelo(), base);
     assert.equal(resultado.error, undefined);
-    assert.equal(resultado.plans.length, 3);
+    assert.ok(resultado.plans.length >= 3 && resultado.plans.length <= 4);
 
     const rotulos = resultado.plans.map((plano) => plano.label);
-    assert.deepEqual(rotulos, ["Máximo descanso", "Menor perda", "Maior sequência"]);
+    assert.equal(rotulos[0], "Máximo descanso");
+    assert.ok(rotulos.includes("Máximo dias úteis"));
+    assert.ok(rotulos.includes("Menor perda"));
+    assert.ok(rotulos.includes("Maior sequência"));
 
     resultado.plans.forEach((plano) => {
         assert.equal(plano.feriasDays, 30);
@@ -124,11 +127,25 @@ test("a busca devolve descanso em dias e respeita férias, ATIN e PR", () => {
     });
 
     const maximo = resultado.plans[0];
-    const menor = resultado.plans[1];
+    const menor = resultado.plans.find((plano) => plano.label === "Menor perda");
+    assert.ok(menor);
     assert.ok(maximo.rest >= menor.rest);
     assert.equal(menor.prLoss, 0);
     assert.equal(menor.used.abonada, 0);
     assert.equal(menor.used.lp, 0);
+});
+
+test("Máximo dias úteis cobre 24 dias úteis com os 30 corridos", () => {
+    const resultado = Folga.optimize(modelo(), base);
+    const uteis = resultado.plans.find((plano) => plano.label === "Máximo dias úteis");
+    assert.ok(uteis);
+    assert.ok(uteis.feriasUteis >= 24);
+    assert.equal(uteis.feriasDays, 30);
+    assert.equal(uteis.atinOk, true);
+    assert.equal(uteis.prOk, true);
+    resultado.plans.forEach((plano) => {
+        assert.ok((plano.feriasUteis || 0) <= uteis.feriasUteis);
+    });
 });
 
 test("um bloco de 30 dias quebra o mês para não passar de 20 no ATIN", () => {

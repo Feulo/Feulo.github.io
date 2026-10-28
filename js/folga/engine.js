@@ -357,28 +357,43 @@
       if (startDow === 5) shape -= 1;
       return {
         left: left, right: right, bonus: left + right, island: left + len + right,
-        wasteHoliday: wasteHoliday, wasteWeekend: wasteWeekend, shape: shape, len: len
+        wasteHoliday: wasteHoliday, wasteWeekend: wasteWeekend, shape: shape, len: len,
+        uteis: len - wasteHoliday - wasteWeekend
       };
     }
 
     function diversify(list, limit) {
       const picked = [];
-      const sorted = list.slice().sort(function (a, b) {
+      function pushUnique(c) {
+        if (picked.length >= limit) return;
+        if (picked.indexOf(c) !== -1) return;
+        picked.push(c);
+      }
+      function take(sorted, allowClash, cap) {
+        sorted.forEach(function (c) {
+          if (picked.length >= (cap == null ? limit : Math.min(cap, limit))) return;
+          if (!allowClash) {
+            const clash = picked.some(function (p) {
+              if (!overlaps(p, c)) return false;
+              const inter = Math.min(p.j, c.j) - Math.max(p.i, c.i) + 1;
+              return inter > Math.min(p.len, c.len) * 0.6;
+            });
+            if (clash) return;
+          }
+          pushUnique(c);
+        });
+      }
+      const byBonus = list.slice().sort(function (a, b) {
         return b.bonus - a.bonus || a.wasteHoliday - b.wasteHoliday || b.shape - a.shape || a.wasteWeekend - b.wasteWeekend || b.island - a.island;
       });
-      sorted.forEach(function (c) {
-        if (picked.length >= limit) return;
-        const clash = picked.some(function (p) {
-          if (!overlaps(p, c)) return false;
-          const inter = Math.min(p.j, c.j) - Math.max(p.i, c.i) + 1;
-          return inter > Math.min(p.len, c.len) * 0.6;
-        });
-        if (!clash) picked.push(c);
+      const byUteis = list.slice().sort(function (a, b) {
+        return b.uteis - a.uteis || a.wasteWeekend - b.wasteWeekend || a.wasteHoliday - b.wasteHoliday || b.bonus - a.bonus;
       });
-      sorted.forEach(function (c) {
-        if (picked.length >= limit) return;
-        if (picked.indexOf(c) === -1) picked.push(c);
-      });
+      const reserved = Math.max(4, Math.ceil(limit / 2));
+      take(byBonus, false, reserved);
+      take(byUteis, false, limit);
+      take(byBonus, true, limit);
+      take(byUteis, true, limit);
       return picked;
     }
 
@@ -506,7 +521,7 @@
           byLen[len].push(Object.assign({ i: i, j: j, len: len, counts: counts }, info));
         }
       }
-      for (let len = 1; len <= 30; len++) byLen[len] = diversify(byLen[len], 14);
+      for (let len = 1; len <= 30; len++) byLen[len] = diversify(byLen[len], 16);
       return byLen;
     }
 
@@ -541,17 +556,31 @@
           }, info));
         }
       }
-      for (let len = 1; len <= 30; len++) {
-        byLen[len].sort(function (a, b) {
-          return b.bonus - a.bonus || a.wasteHoliday - b.wasteHoliday || b.shape - a.shape || a.wasteWeekend - b.wasteWeekend || b.island - a.island;
-        });
-        byLen[len] = byLen[len].slice(0, 10);
-      }
+      for (let len = 1; len <= 30; len++) byLen[len] = diversify(byLen[len], 12);
       return byLen;
     }
 
     function setSignature(blocks) {
       return blocks.map(function (b) { return b.i + '-' + b.j; }).sort().join('|');
+    }
+
+    function selectCandidatePairs(pairs, cap) {
+      const byBonus = pairs.slice().sort(function (p, q) { return q.bonus - p.bonus || (q.uteis || 0) - (p.uteis || 0); });
+      const byUteis = pairs.slice().sort(function (p, q) { return (q.uteis || 0) - (p.uteis || 0) || q.bonus - p.bonus; });
+      const out = [];
+      const seen = new Set();
+      function take(list, n) {
+        list.forEach(function (p) {
+          if (out.length >= n) return;
+          const key = p.x.i + '-' + p.x.j + '|' + p.y.i + '-' + p.y.j + '|' + p.cLen;
+          if (seen.has(key)) return;
+          seen.add(key);
+          out.push(p);
+        });
+      }
+      take(byBonus, Math.ceil(cap * 0.55));
+      take(byUteis, cap);
+      return out;
     }
 
     function combineVacationExpanded(byLen, anchorPools, totalSlots, totalFerias, minBlock, minOneBlock, baseCounts) {
@@ -615,15 +644,14 @@
               if (overlaps(x, y) || x.j + 1 === y.i || y.j + 1 === x.i) return;
               const counts = addCounts(zeroCounts, addCounts(x.counts, y.counts));
               if (!monthsOk(counts)) return;
-              pairs.push({ x: x, y: y, cLen: cLen, counts: counts, bonus: x.bonus + y.bonus });
+              pairs.push({ x: x, y: y, cLen: cLen, counts: counts, bonus: x.bonus + y.bonus, uteis: (x.uteis || 0) + (y.uteis || 0) });
             });
           }
         });
       }
-      pairs.sort(function (p, q) { return q.bonus - p.bonus; });
       const sets = [];
       const seen = new Set();
-      pairs.slice(0, 750).forEach(function (p) {
+      selectCandidatePairs(pairs, 900).forEach(function (p) {
         (pools[2][p.cLen] || []).forEach(function (z) {
           if (isFree[1] && isFree[2] && p.y.i >= z.i) return;
           const blocks = [p.x, p.y, z];
@@ -711,15 +739,14 @@
               if (overlaps(x, y) || x.j + 1 === y.i || y.j + 1 === x.i) return;
               const counts = addCounts(zeroCounts, addCounts(x.counts, y.counts));
               if (!monthsOk(counts)) return;
-              pairs.push({ x: x, y: y, cLen: cLen, counts: counts, bonus: x.bonus + y.bonus });
+              pairs.push({ x: x, y: y, cLen: cLen, counts: counts, bonus: x.bonus + y.bonus, uteis: (x.uteis || 0) + (y.uteis || 0) });
             });
           }
         });
       }
-      pairs.sort(function (p, q) { return q.bonus - p.bonus; });
       const sets = [];
       const seen = new Set();
-      pairs.slice(0, 750).forEach(function (p) {
+      selectCandidatePairs(pairs, 900).forEach(function (p) {
         (byLen[p.cLen] || []).forEach(function (z) {
           const blocks = [p.x, p.y, z];
           if (!validWithFixed(blocks)) return;
@@ -736,18 +763,24 @@
       const scored = sets.map(function (blocks) {
         const bonus = blocks.reduce(function (s, b) { return s + b.bonus; }, 0);
         const waste = blocks.reduce(function (s, b) { return s + b.wasteHoliday * 3 + b.wasteWeekend; }, 0);
-        return { blocks: blocks, bonus: bonus, waste: waste };
+        const uteis = blocks.reduce(function (s, b) { return s + (b.uteis || 0); }, 0);
+        return { blocks: blocks, bonus: bonus, waste: waste, uteis: uteis };
       });
-      scored.sort(function (a, b) { return b.bonus - a.bonus || a.waste - b.waste; });
+      const byBonus = scored.slice().sort(function (a, b) { return b.bonus - a.bonus || a.waste - b.waste || b.uteis - a.uteis; });
+      const byUteis = scored.slice().sort(function (a, b) { return b.uteis - a.uteis || a.waste - b.waste || b.bonus - a.bonus; });
       const out = [];
       const seen = new Set();
-      scored.forEach(function (row) {
-        if (out.length >= 220) return;
-        const sig = setSignature(row.blocks);
-        if (seen.has(sig)) return;
-        seen.add(sig);
-        out.push(row.blocks);
-      });
+      function take(list, cap) {
+        list.forEach(function (row) {
+          if (out.length >= cap) return;
+          const sig = setSignature(row.blocks);
+          if (seen.has(sig)) return;
+          seen.add(sig);
+          out.push(row.blocks);
+        });
+      }
+      take(byBonus, 160);
+      take(byUteis, 280);
       return out;
     }
 
@@ -1039,6 +1072,7 @@
       const abMonth = {};
       let waste = 0;
       let spent = 0;
+      let feriasUteis = 0;
       Object.keys(leaveMap).forEach(function (iso) {
         const i = index.get(iso);
         if (i == null || !model.days[i].inYear) return;
@@ -1049,6 +1083,7 @@
         used[type] = (used[type] || 0) + 1;
         if (meta.blocked) return;
         spent++;
+        if (type === 'ferias' && day.plain) feriasUteis++;
         if (meta.atin) atin[day.month]++;
         if (meta.pr) non[day.quarter]++;
         if ((type === 'ferias' || type === 'lp') && !day.plain) waste++;
@@ -1106,7 +1141,7 @@
         waste: waste, used: used, months: months, quarters: quarters,
         diligencias: diligencias, atinLoss: atinLoss, prLoss: prLoss,
         loss: cents(atinLoss + prLoss), atinOk: atinOk, prOk: prOk, dilOk: dilOk,
-        feriasDays: feriasDays, abMonth: abMonth, minDilMargin: minMargin, required: required
+        feriasDays: feriasDays, feriasUteis: feriasUteis, abMonth: abMonth, minDilMargin: minMargin, required: required
       };
     }
 
@@ -1192,7 +1227,7 @@
         return { error: 'As combinações estouraram a meta de diligências, a trava de 20 dias do ATIN ou o limite de 1/3 da PR. Afrouxe os mínimos, os dias fixados ou o período da busca.' };
       }
       return {
-        plans: pickThree(plans),
+        plans: pickStrategies(plans),
         fixedSummary: {
           feriasDays: fixedDays,
           feriasPeriods: fixedFerias.length,
@@ -1344,9 +1379,12 @@
       return Object.assign({}, result, diagnoseAndRelax(model, cfg, fixedMap));
     }
 
-    function pickThree(plans) {
+    function pickStrategies(plans) {
       const byRest = plans.slice().sort(function (a, b) {
         return b.rest - a.rest || b.longest - a.longest || a.loss - b.loss || a.waste - b.waste;
+      });
+      const byUteis = plans.slice().sort(function (a, b) {
+        return (b.feriasUteis || 0) - (a.feriasUteis || 0) || a.waste - b.waste || b.rest - a.rest;
       });
       const byCost = plans.slice().sort(function (a, b) {
         return a.loss - b.loss || a.waste - b.waste || b.minDilMargin - a.minDilMargin || b.rest - a.rest;
@@ -1365,10 +1403,11 @@
         }
       }
       take(byRest, 'Máximo descanso', 'Mais dias reais de folga, usando o saldo que aumenta a emenda sem zerar PR nem ATIN.');
+      take(byUteis, 'Máximo dias úteis', 'Cobre o maior número de dias úteis com os 30 dias corridos, evitando gastar férias em sábado, domingo ou feriado.');
       take(byCost, 'Menor perda', 'Só férias e escala, que não descontam a PR. Abonada, eleitoral e licença-prêmio novas ficam de fora deste cenário.');
       take(byStreak, 'Maior sequência', 'O maior trecho contínuo sem trabalhar, ainda dentro das travas financeiras.');
       byRest.forEach(function (p) {
-        if (chosen.length >= 3 || sigs.has(p.signature)) return;
+        if (chosen.length >= 4 || sigs.has(p.signature)) return;
         sigs.add(p.signature);
         chosen.push(Object.assign({}, p, {
           label: 'Alternativa',
@@ -1376,7 +1415,7 @@
           id: 'alt' + chosen.length
         }));
       });
-      return chosen.slice(0, 3);
+      return chosen.slice(0, 4);
     }
 
     function holidaySelfCheck() {
