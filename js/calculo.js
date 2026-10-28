@@ -924,6 +924,7 @@ function calcSallary() {
     }
 
     document.getElementById("rpps").innerText = numberToReal(atual.valorPrevidenciaSocial);
+    atualizarContrachequeAnual(entrada, atual);
     atualizarPerdaDaCotaSeVisivel();
 }
 
@@ -1131,6 +1132,533 @@ function atualizarAuxilioSaude() {
     }
 }
 
+const ANO_CONTRACHEQUE = 2026;
+const MESES_CURTOS_PORTAL = [
+    "jan", "fev", "mar", "abr", "mai", "jun",
+    "jul", "ago", "set", "out", "nov", "dez"
+];
+const MESES_NOMES_PORTAL = [
+    "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+    "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
+];
+
+const estadoPopupAnual = {
+    mesFerias: 4, // Abril por padrão
+    modo13: "12", // "12" (integral em dezembro) ou "1".."11" (50% no aniversário + quitação em dezembro)
+    mesesAbertos: new Set()
+};
+
+function formatarRedutorPortal(valor) {
+    if (valorZerado(valor)) return numberToReal(0);
+    return `-${numberToReal(valor)}`;
+}
+
+function aliquotaIamspeTotal(entrada) {
+    if (entrada.auxilioSaude !== "iamspe") return 0;
+    return entrada.iamspe
+        + entrada.agregadosIamspeIdadeInferior * 0.02
+        + entrada.agregadosIamspeIdadeSuperior * 0.03
+        + entrada.dependentesIamspeIdadeInferior * 0.005
+        + entrada.dependentesIamspeIdadeSuperior * 0.01;
+}
+
+function calcularDescontosSobreBase(baseTributavel, entrada, folhaBase, incluirAmafrespFixo = true) {
+    const aposentado = entrada.situacao === "aposentado";
+    const faixas = entrada.regimePrevidenciario === "RPPS" ? FAIXAS_RPPS : FAIXAS_RGPS;
+    const excedenteInss = Math.max(0, baseTributavel - TETO_INSS);
+    const rpps = aposentado
+        ? excedenteInss * 0.16
+        : calcularFaixasProgressivas(baseTributavel, faixas);
+    const prevComp = excedenteInss * entrada.previdenciaComplementar;
+    const baseIRRF = baseTributavel - rpps - prevComp - (entrada.dependentesIRRF * 189.59);
+    const irrf = calcularIRRF(baseIRRF);
+    let saude = 0;
+    if (entrada.auxilioSaude === "amafresp") {
+        saude = incluirAmafrespFixo ? folhaBase.descontoSaude : 0;
+    } else if (entrada.auxilioSaude === "iamspe") {
+        saude = aliquotaIamspeTotal(entrada) * baseTributavel;
+    }
+    return {
+        rpps,
+        prevComp,
+        irrf,
+        saude,
+        total: rpps + prevComp + irrf + saude
+    };
+}
+
+function calcularAnoContracheques(entrada, folhaBase) {
+    const aposentado = entrada.situacao === "aposentado";
+    const mesFerias = aposentado ? 0 : estadoPopupAnual.mesFerias;
+    const mesAdiantamento13 = Number(estadoPopupAnual.modo13) < 12 ? Number(estadoPopupAnual.modo13) : 0;
+
+    // 1. Remuneração mensal fixa/variável do cargo (sem PR, pois a PR entra em Pagamentos Eventuais nos meses trimestrais)
+    const remuneracaoMensal =
+        folhaBase.vb +
+        folhaBase.pp +
+        folhaBase.pl +
+        folhaBase.incorporacao +
+        folhaBase.qq +
+        folhaBase.sextaParte;
+    const abateRemuneracaoMensal = Math.max(0, remuneracaoMensal - entrada.teto);
+
+    // 2. Participação nos Resultados (PR) — paga trimestralmente em março (3), junho (6), setembro (9) e dezembro (12)
+    // Conforme art. 33, § 1º da LC 1.059/2008, Resolução SF 92/2018 e Resoluções SFP trimestrais.
+    const prMensal = folhaBase.pr;
+    const prTrimestralBruta = prMensal * 3;
+    // Em cada mês do trimestre, a PR respeita a margem até o teto mensal
+    const abatePrPorMes = Math.max(
+        0,
+        (remuneracaoMensal + prMensal) - Math.max(remuneracaoMensal, entrada.teto)
+    );
+    const abatePrTrimestral = abatePrPorMes * 3;
+
+    // 3. Férias (1/3 constitucional sobre a remuneração, pago no mês de férias — padrão: abril)
+    const temFeriasNoAno = !aposentado && mesFerias >= 1 && mesFerias <= 12;
+    const brutoTercoFerias = temFeriasNoAno ? (remuneracaoMensal / 3) : 0;
+    const abateTercoFerias = Math.max(0, brutoTercoFerias - (entrada.teto / 3));
+    const baseTercoFerias = brutoTercoFerias - abateTercoFerias;
+    const irrfTercoFerias = temFeriasNoAno
+        ? calcularIRRF(baseTercoFerias - (entrada.dependentesIRRF * 189.59))
+        : 0;
+
+    // 4. 13º Salário (tributação exclusiva em dezembro; se houver adiantamento de 50%, sai sem desconto no mês escolhido e desconta em dezembro)
+    const bruto13Total = remuneracaoMensal;
+    const abate13Total = Math.max(0, bruto13Total - entrada.teto);
+    const base13Total = bruto13Total - abate13Total;
+    const valorAdiantamento13 = (mesAdiantamento13 >= 1 && mesAdiantamento13 <= 11)
+        ? (base13Total / 2)
+        : 0;
+    const descontos13 = calcularDescontosSobreBase(base13Total, entrada, folhaBase, false);
+
+    // 5. Indenizações separadas: Abono Permanência & Outras Indenizações (Transporte) e Auxílio Alimentação à parte
+    const outrasIndenizacoesMensal = folhaBase.auxilioTransporte;
+    const auxilioAlimentacaoMensal = folhaBase.vr;
+
+    const meses = [];
+    for (let mes = 1; mes <= 12; mes += 1) {
+        const mesAno = `${MESES_CURTOS_PORTAL[mes - 1]}/${ANO_CONTRACHEQUE}`;
+        const nomeMes = MESES_NOMES_PORTAL[mes - 1];
+        const trimPr = mes % 3 === 0 ? (mes / 3) : 0;
+        const temPr = trimPr > 0 && prTrimestralBruta > 0;
+        const eFerias = temFeriasNoAno && mes === mesFerias;
+        const eAdiantamento13 = valorAdiantamento13 > 0 && mes === mesAdiantamento13;
+        const eQuitacao13 = mes === 12;
+
+        const feriasBrutoMes = eFerias ? brutoTercoFerias : 0;
+        const decimoBrutoPortalMes =
+            (eAdiantamento13 ? valorAdiantamento13 : 0) +
+            (eQuitacao13 ? (bruto13Total - valorAdiantamento13) : 0);
+        const feriasEDecimoMes = feriasBrutoMes + decimoBrutoPortalMes;
+
+        const pagamentosEventuaisMes = temPr ? prTrimestralBruta : 0;
+        const licencaPremioIndenizadaMes = 0;
+        const indenizacoesMes = outrasIndenizacoesMensal;
+        const auxilioAlimentacaoMes = auxilioAlimentacaoMensal;
+
+        const abatePrMes = temPr ? abatePrTrimestral : 0;
+        const abateFeriasMes = eFerias ? abateTercoFerias : 0;
+        const abate13Mes = eQuitacao13 ? abate13Total : 0;
+        const redutorSalarialMes = abateRemuneracaoMensal + abatePrMes + abateFeriasMes + abate13Mes;
+
+        // Base mensal (Remuneração + PR trimestral após o redutor)
+        const baseTributavelMensal =
+            (remuneracaoMensal - abateRemuneracaoMensal) +
+            (pagamentosEventuaisMes - abatePrMes);
+        const descMensal = calcularDescontosSobreBase(baseTributavelMensal, entrada, folhaBase, true);
+
+        const rppsExtra = eQuitacao13 ? descontos13.rpps : 0;
+        const prevCompExtra = eQuitacao13 ? descontos13.prevComp : 0;
+        const irrfExtra = (eFerias ? irrfTercoFerias : 0) + (eQuitacao13 ? descontos13.irrf : 0);
+        const saudeExtra = eQuitacao13 ? descontos13.saude : 0;
+        const descontosExtraTotal = rppsExtra + prevCompExtra + irrfExtra + saudeExtra;
+        const descontosTotalMes = descMensal.total + descontosExtraTotal;
+
+        const totalBrutoMes =
+            remuneracaoMensal +
+            feriasEDecimoMes +
+            pagamentosEventuaisMes +
+            licencaPremioIndenizadaMes +
+            indenizacoesMes +
+            auxilioAlimentacaoMes;
+        const remuneracaoLiquidaMes = totalBrutoMes - redutorSalarialMes - descontosTotalMes;
+
+        const badges = [];
+        if (eFerias) badges.push({ texto: "Férias (1/3)", classe: "badge-ferias" });
+        if (eAdiantamento13) badges.push({ texto: "1ª parc. 13º", classe: "badge-13" });
+        if (eQuitacao13) badges.push({ texto: valorAdiantamento13 > 0 ? "2ª parc. 13º" : "13º Salário", classe: "badge-13" });
+        if (temPr) badges.push({ texto: `PR ${trimPr}º Tri`, classe: "badge-pr" });
+
+        meses.push({
+            mes,
+            mesAno,
+            nomeMes,
+            trimPr,
+            temPr,
+            eFerias,
+            eAdiantamento13,
+            eQuitacao13,
+            badges,
+            remuneracao: remuneracaoMensal,
+            feriasBrutoMes,
+            decimoBrutoPortalMes,
+            feriasEDecimo: feriasEDecimoMes,
+            pagamentosEventuais: pagamentosEventuaisMes,
+            licencaPremio: licencaPremioIndenizadaMes,
+            indenizacoes: indenizacoesMes,
+            auxilioAlimentacao: auxilioAlimentacaoMes,
+            abateRemuneracaoMensal,
+            abatePrMes,
+            abateFeriasMes,
+            abate13Mes,
+            redutorSalarial: redutorSalarialMes,
+            descMensal,
+            rppsExtra,
+            prevCompExtra,
+            irrfExtra,
+            saudeExtra,
+            descontosExtraTotal,
+            descontosTotal: descontosTotalMes,
+            remuneracaoLiquida: remuneracaoLiquidaMes
+        });
+    }
+
+    const totais = meses.reduce((acc, m) => {
+        acc.remuneracao += m.remuneracao;
+        acc.feriasEDecimo += m.feriasEDecimo;
+        acc.pagamentosEventuais += m.pagamentosEventuais;
+        acc.licencaPremio += m.licencaPremio;
+        acc.indenizacoes += m.indenizacoes;
+        acc.auxilioAlimentacao += m.auxilioAlimentacao;
+        acc.redutorSalarial += m.redutorSalarial;
+        acc.descontosTotal += m.descontosTotal;
+        acc.remuneracaoLiquida += m.remuneracaoLiquida;
+        return acc;
+    }, {
+        remuneracao: 0,
+        feriasEDecimo: 0,
+        pagamentosEventuais: 0,
+        licencaPremio: 0,
+        indenizacoes: 0,
+        auxilioAlimentacao: 0,
+        redutorSalarial: 0,
+        descontosTotal: 0,
+        remuneracaoLiquida: 0
+    });
+
+    totais.mediaLiquidaMensal = totais.remuneracaoLiquida / 12;
+
+    return { meses, totais };
+}
+
+function linhaFolhaAnual(sinal, nome, valor, classe = "", detalhe = "") {
+    return `<div class="item-resultado${classe ? ` ${classe}` : ""}">
+        <div class="item-esquerda">
+            <span>(${sinal}) ${nome}</span>
+            ${detalhe ? `<span class="item-cotas">${detalhe}</span>` : ""}
+        </div>
+        <span class="item-valor">${numberToReal(valor)}</span>
+    </div>`;
+}
+
+function renderizarDetalheMesAnual(m, entrada, folhaBase, nomeFuncao) {
+    const nomeSaude = entrada.auxilioSaude === "amafresp"
+        ? "AMAFRESP"
+        : (entrada.auxilioSaude === "iamspe" ? "IAMSPE" : "Auxílio Saúde");
+    const nomeTransporte = entrada.transporte === "adicional" ? "Adicional de transporte" : "Nos Conformes";
+    const rotuloExtraIr = m.eFerias && m.eQuitacao13
+        ? "férias/13º"
+        : (m.eFerias ? "férias" : "13º");
+
+    const composicaoBruta = [
+        linhaFolhaAnual("+", "Vencimento base", folhaBase.vb, "", `(${VB_COTAS[entrada.cargo - 1]} cotas)`),
+        !valorZerado(folhaBase.pp) ? linhaFolhaAnual("+", "Prêmio Produtividade", folhaBase.pp, "", `(${folhaBase.ppCotas} cotas)`) : "",
+        !valorZerado(folhaBase.pl) ? linhaFolhaAnual("+", "Pro Labore", folhaBase.pl, "", `(${folhaBase.funcaoObj.pl} cotas)`) : "",
+        !valorZerado(folhaBase.incorporacao) ? linhaFolhaAnual("+", "Incorporação", folhaBase.incorporacao, "", "(valor nominal)") : "",
+        !valorZerado(folhaBase.qq) ? linhaFolhaAnual("+", "Quinquênios", folhaBase.qq, "", `(${(folhaBase.aliquotaQq * 100).toFixed(0)}%)`) : "",
+        !valorZerado(folhaBase.sextaParte) ? linhaFolhaAnual("+", "Sexta-Parte", folhaBase.sextaParte, "", "(1/6)") : "",
+        linhaFolhaAnual("=", "Remuneração do mês", m.remuneracao, "fw-bold"),
+        m.temPr ? linhaFolhaAnual("+", `Pagamentos Eventuais (PR ${m.trimPr}º tri)`, m.pagamentosEventuais, "text-primary fw-semibold", `(3 × ${folhaBase.prCotas} cotas)`) : "",
+        m.eFerias ? linhaFolhaAnual("+", "Férias (1/3)", m.feriasBrutoMes, "text-primary fw-semibold", "(terço constitucional)") : "",
+        (m.eAdiantamento13 || m.eQuitacao13) ? linhaFolhaAnual("+", "13º Salário", m.decimoBrutoPortalMes, "text-primary fw-semibold", m.eAdiantamento13 && !m.eQuitacao13 ? "(1ª parcela)" : "(quitação)") : "",
+        !valorZerado(m.redutorSalarial) ? linhaFolhaAnual("−", "Redutor Salarial", m.redutorSalarial, "text-danger fw-semibold", "(abate-teto)") : ""
+    ].join("");
+
+    const descontosHtml = [
+        linhaFolhaAnual("−", "Previdência Oficial (RPPS)", m.descMensal.rpps + m.rppsExtra, "text-danger", !valorZerado(m.rppsExtra) ? `(mês ${numberToReal(m.descMensal.rpps)} + 13º ${numberToReal(m.rppsExtra)})` : ""),
+        (!valorZerado(m.descMensal.prevComp + m.prevCompExtra) || entrada.situacao !== "aposentado")
+            ? linhaFolhaAnual("−", "Previdência Complementar", m.descMensal.prevComp + m.prevCompExtra, "text-danger", !valorZerado(m.prevCompExtra) ? `(mês ${numberToReal(m.descMensal.prevComp)} + 13º ${numberToReal(m.prevCompExtra)})` : "")
+            : "",
+        linhaFolhaAnual("−", "Imposto de Renda (IRRF)", m.descMensal.irrf + m.irrfExtra, "text-danger", !valorZerado(m.irrfExtra) ? `(mês ${numberToReal(m.descMensal.irrf)} + ${rotuloExtraIr} ${numberToReal(m.irrfExtra)})` : ""),
+        entrada.auxilioSaude !== "nenhum"
+            ? linhaFolhaAnual("−", `Assistência à Saúde (${nomeSaude})`, m.descMensal.saude + m.saudeExtra, "text-danger", !valorZerado(m.saudeExtra) ? `(mês ${numberToReal(m.descMensal.saude)} + 13º ${numberToReal(m.saudeExtra)})` : "")
+            : "",
+        linhaFolhaAnual("=", "Total de descontos obrigatórios", m.descontosTotal, "fw-bold text-danger")
+    ].join("");
+
+    const indenizacoesELiquidoHtml = [
+        !folhaBase.semFuncao && entrada.transporte !== "nenhum"
+            ? linhaFolhaAnual("+", nomeTransporte, m.indenizacoes, "text-success", entrada.transporte === "nos" ? "(300 UFESPs)" : "(1.710 cotas)")
+            : "",
+        !folhaBase.semFuncao && !valorZerado(m.auxilioAlimentacao)
+            ? linhaFolhaAnual("+", "Auxílio Alimentação", m.auxilioAlimentacao, "text-success", `(${entrada.diasAlimentacao}d × R$ 55)`)
+            : "",
+        linhaFolhaAnual("=", "Total de Indenizações", m.indenizacoes + m.auxilioAlimentacao, "fw-bold text-success"),
+        linhaFolhaAnual("=", `Remuneração Líquida em ${m.mesAno}`, m.remuneracaoLiquida, "folha-final")
+    ].join("");
+
+    return `
+        <div class="portal-detalhe-box">
+            <div class="portal-detalhe-topo">
+                <strong>Detalhamento do Contracheque — ${m.nomeMes} de ${ANO_CONTRACHEQUE} (${m.mesAno})</strong>
+                <span class="text-muted small">Cota de pagamento: ${numberToQuota(folhaBase.valorCota)} · Teto: ${numberToReal(entrada.teto)}</span>
+            </div>
+            <div class="portal-detalhe-grid">
+                <section class="portal-detalhe-card">
+                    <h3>1. Remuneração, Eventuais e Teto</h3>
+                    ${composicaoBruta}
+                </section>
+                <section class="portal-detalhe-card">
+                    <h3>2. Descontos Obrigatórios (Folha)</h3>
+                    ${descontosHtml}
+                </section>
+                <section class="portal-detalhe-card">
+                    <h3>3. Indenizações e Valor Líquido</h3>
+                    ${indenizacoesELiquidoHtml}
+                </section>
+            </div>
+        </div>
+    `;
+}
+
+function iconeInfoPortal(texto) {
+    return `<span class="portal-info" tabindex="0" aria-label="${texto}">i<span class="portal-tooltip" role="tooltip">${texto}</span></span>`;
+}
+
+function atualizarContrachequeAnual(entrada, folhaBase) {
+    const container = document.getElementById("anualConteudo");
+    if (!container) return;
+
+    const entradaAtual = entrada || lerEntrada();
+    const folhaAtual = folhaBase || montarFolha(entradaAtual);
+    const aposentado = entradaAtual.situacao === "aposentado";
+    const { meses, totais } = calcularAnoContracheques(entradaAtual, folhaAtual);
+    const nomeCargo = document.getElementById("cargo")?.selectedOptions[0]?.text?.trim() || "";
+    const nomeFuncao = document.getElementById("funcao")?.selectedOptions[0]?.text?.trim() || "";
+    const subtitulo = document.getElementById("subtituloPopupAnual");
+    if (subtitulo) {
+        const textoFerias = aposentado
+            ? "Aposentado (sem 1/3 de férias)"
+            : `Férias (1/3) em ${MESES_CURTOS_PORTAL[estadoPopupAnual.mesFerias - 1]}/${ANO_CONTRACHEQUE}`;
+        subtitulo.textContent = `${nomeCargo} · ${aposentado ? "Aposentado" : nomeFuncao} · PR trimestral (mar, jun, set e dez) · ${textoFerias}`;
+    }
+
+    const listaMeses = meses;
+    const todosAbertos = listaMeses.every((m) => estadoPopupAnual.mesesAbertos.has(m.mes));
+
+    const opcoesMesFerias = MESES_NOMES_PORTAL.map((nome, idx) => {
+        const valor = idx + 1;
+        const sel = valor === estadoPopupAnual.mesFerias ? " selected" : "";
+        return `<option value="${valor}"${sel}>${nome} (${MESES_CURTOS_PORTAL[idx]}/${ANO_CONTRACHEQUE})</option>`;
+    }).join("");
+
+    const opcoesModo13 = [
+        `<option value="12"${estadoPopupAnual.modo13 === "12" ? " selected" : ""}>Integral em dez/${ANO_CONTRACHEQUE}</option>`,
+        ...MESES_NOMES_PORTAL.slice(0, 11).map((nome, idx) => {
+            const valor = String(idx + 1);
+            const sel = valor === estadoPopupAnual.modo13 ? " selected" : "";
+            return `<option value="${valor}"${sel}>50% em ${MESES_CURTOS_PORTAL[idx]}/${ANO_CONTRACHEQUE} (aniversário) + dez/${ANO_CONTRACHEQUE}</option>`;
+        })
+    ].join("");
+
+    const linhasHtml = listaMeses.map((m) => {
+        const aberto = estadoPopupAnual.mesesAbertos.has(m.mes);
+        const badgesHtml = m.badges.map((b) => `<span class="portal-badge ${b.classe}">${b.texto}</span>`).join("");
+        return `
+            <tr class="portal-row${aberto ? " portal-row-aberta" : ""}" data-mes-toggle="${m.mes}" title="Clique para ver as rubricas e descontos de ${m.mesAno}">
+                <td class="portal-col-mes">
+                    <div class="portal-mes-wrap">
+                        <span class="portal-chevron" aria-hidden="true">${aberto ? "▾" : "▸"}</span>
+                        <span class="portal-mes-texto">${m.mesAno}</span>
+                        ${badgesHtml}
+                    </div>
+                </td>
+                <td class="text-center">${numberToReal(m.remuneracao)}</td>
+                <td class="text-center${!valorZerado(m.feriasEDecimo) ? " fw-semibold text-primary" : ""}">${numberToReal(m.feriasEDecimo)}</td>
+                <td class="text-center${!valorZerado(m.pagamentosEventuais) ? " fw-semibold text-primary" : ""}">${numberToReal(m.pagamentosEventuais)}</td>
+                <td class="text-center">${numberToReal(m.licencaPremio)}</td>
+                <td class="text-center text-success">${numberToReal(m.indenizacoes)}</td>
+                <td class="text-center text-success">${numberToReal(m.auxilioAlimentacao)}</td>
+                <td class="text-center${!valorZerado(m.redutorSalarial) ? " portal-redutor-ativo" : ""}">${formatarRedutorPortal(m.redutorSalarial)}</td>
+                <td class="text-center fw-bold portal-liquido-cel">${numberToReal(m.remuneracaoLiquida)}</td>
+            </tr>
+            <tr class="portal-detail-row${aberto ? "" : " d-none"}" data-mes-detalhe="${m.mes}">
+                <td colspan="9">
+                    ${renderizarDetalheMesAnual(m, entradaAtual, folhaAtual, nomeFuncao)}
+                </td>
+            </tr>
+        `;
+    }).join("");
+
+    container.innerHTML = `
+        <div class="portal-kpis mb-3">
+            <div class="portal-kpi neutro">
+                <span>Remuneração (12 meses)</span>
+                <strong>${numberToReal(totais.remuneracao)}</strong>
+            </div>
+            <div class="portal-kpi info">
+                <span>Férias (1/3) + 13º Salário</span>
+                <strong>${numberToReal(totais.feriasEDecimo)}</strong>
+            </div>
+            <div class="portal-kpi info">
+                <span>Pagamentos Eventuais (4 PRs)</span>
+                <strong>${numberToReal(totais.pagamentosEventuais)}</strong>
+            </div>
+            <div class="portal-kpi sucesso">
+                <span>Outras Indenizações (ano)</span>
+                <strong>${numberToReal(totais.indenizacoes)}</strong>
+            </div>
+            <div class="portal-kpi sucesso">
+                <span>Auxílio Alimentação (ano)</span>
+                <strong>${numberToReal(totais.auxilioAlimentacao)}</strong>
+            </div>
+            <div class="portal-kpi perigo">
+                <span>Redutor Salarial (ano)</span>
+                <strong class="text-danger">${formatarRedutorPortal(totais.redutorSalarial)}</strong>
+            </div>
+            <div class="portal-kpi portal-kpi-destaque">
+                <span>Remuneração Líquida no Ano</span>
+                <strong>${numberToReal(totais.remuneracaoLiquida)}</strong>
+                <small>Média de ${numberToReal(totais.mediaLiquidaMensal)}/mês</small>
+            </div>
+        </div>
+
+        <div class="portal-barra-controles mb-3">
+            <div class="portal-controles-esq">
+                ${!aposentado ? `
+                <label class="portal-controle-item">
+                    <span>Mês das férias (1/3):</span>
+                    <select id="selectMesFeriasPortal" class="form-select form-select-sm">
+                        ${opcoesMesFerias}
+                    </select>
+                </label>` : ""}
+                <label class="portal-controle-item">
+                    <span>13º Salário:</span>
+                    <select id="selectModo13Portal" class="form-select form-select-sm">
+                        ${opcoesModo13}
+                    </select>
+                </label>
+            </div>
+            <div class="portal-controles-dir">
+                <button type="button" class="btn btn-outline-primary btn-sm" id="btnExpandirTodosPortal">
+                    ${todosAbertos ? "Recolher detalhes" : "Expandir todos os meses"}
+                </button>
+            </div>
+        </div>
+
+        <div class="portal-card-tabela">
+            <div class="portal-card-titulo">
+                <span>Histórico de Recebimentos</span>
+                <small>Clique em qualquer mês para abrir o contracheque detalhado (rubricas, impostos e descontos)</small>
+            </div>
+            <div class="table-responsive">
+                <table class="portal-tabela" id="tabelaContrachequeAnual">
+                    <thead>
+                        <tr>
+                            <th class="text-start">Mês/Ano</th>
+                            <th>Remuneração ${iconeInfoPortal("Soma mensal de Vencimento Base, Prêmio de Produtividade, Pró-Labore/Incorporação, Quinquênios e Sexta-Parte (sem a PR).")}</th>
+                            <th>Férias e<br>13º Salário ${iconeInfoPortal("Acréscimo constitucional de 1/3 de férias no mês escolhido (padrão: abril) e 13º salário.")}</th>
+                            <th>Pagamentos<br>Eventuais ${iconeInfoPortal("Participação nos Resultados (PR) paga a cada 3 meses (março, junho, setembro e dezembro), acumulando as 3 competências do trimestre conforme Resoluções SFP.")}</th>
+                            <th>Licença<br>Prêmio<br>Indenizada ${iconeInfoPortal("Valores pagos a título de conversão de licença-prêmio em pecúnia.")}</th>
+                            <th>Abono<br>Permanência &amp;<br>Outras<br>Indenizações ${iconeInfoPortal("Verba indenizatória de transporte (Nos Conformes ou Adicional de Transporte), que não entra no teto nem no Imposto de Renda.")}</th>
+                            <th>Auxílio<br>Alimentação ${iconeInfoPortal("Auxílio Refeição / Alimentação indenizatório (R$ 55,00 por dia de trabalho efetivo), discriminado à parte.")}</th>
+                            <th>Redutor<br>Salarial ${iconeInfoPortal("Abate-teto constitucional. Nos meses de pagamento da PR trimestral (mar, jun, set e dez), aplica o teto acumulado das 3 competências do trimestre.")}</th>
+                            <th>Remuneração<br>Líquida ${iconeInfoPortal("Valor líquido final creditado no mês após o Redutor Salarial e todos os descontos obrigatórios (RPPS, SP-Prevcom, IRRF e saúde).")}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${linhasHtml}
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td class="text-start fw-bold">Total ${ANO_CONTRACHEQUE}</td>
+                            <td class="text-center fw-bold">${numberToReal(totais.remuneracao)}</td>
+                            <td class="text-center fw-bold text-primary">${numberToReal(totais.feriasEDecimo)}</td>
+                            <td class="text-center fw-bold text-primary">${numberToReal(totais.pagamentosEventuais)}</td>
+                            <td class="text-center fw-bold">${numberToReal(totais.licencaPremio)}</td>
+                            <td class="text-center fw-bold text-success">${numberToReal(totais.indenizacoes)}</td>
+                            <td class="text-center fw-bold text-success">${numberToReal(totais.auxilioAlimentacao)}</td>
+                            <td class="text-center fw-bold text-danger">${formatarRedutorPortal(totais.redutorSalarial)}</td>
+                            <td class="text-center fw-bold portal-liquido-total">${numberToReal(totais.remuneracaoLiquida)}</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    `;
+
+    const selFerias = document.getElementById("selectMesFeriasPortal");
+    if (selFerias) {
+        selFerias.addEventListener("change", () => {
+            estadoPopupAnual.mesFerias = Number(selFerias.value) || 4;
+            atualizarContrachequeAnual(entradaAtual, folhaAtual);
+        });
+    }
+
+    const selModo13 = document.getElementById("selectModo13Portal");
+    if (selModo13) {
+        selModo13.addEventListener("change", () => {
+            estadoPopupAnual.modo13 = selModo13.value;
+            atualizarContrachequeAnual(entradaAtual, folhaAtual);
+        });
+    }
+
+    const btnExpandir = document.getElementById("btnExpandirTodosPortal");
+    if (btnExpandir) {
+        btnExpandir.addEventListener("click", () => {
+            if (todosAbertos) {
+                estadoPopupAnual.mesesAbertos.clear();
+            } else {
+                for (let m = 1; m <= 12; m += 1) estadoPopupAnual.mesesAbertos.add(m);
+            }
+            atualizarContrachequeAnual(entradaAtual, folhaAtual);
+        });
+    }
+
+    container.querySelectorAll("[data-mes-toggle]").forEach((tr) => {
+        tr.addEventListener("click", () => {
+            const mes = Number(tr.dataset.mesToggle);
+            if (estadoPopupAnual.mesesAbertos.has(mes)) {
+                estadoPopupAnual.mesesAbertos.delete(mes);
+            } else {
+                estadoPopupAnual.mesesAbertos.add(mes);
+            }
+            atualizarContrachequeAnual(entradaAtual, folhaAtual);
+        });
+    });
+}
+
+function mostrarContrachequeAnual() {
+    const dialog = document.getElementById("popupContrachequeAnual");
+    if (!dialog) return;
+    atualizarContrachequeAnual();
+    if (typeof dialog.showModal === "function") {
+        if (!dialog.open) dialog.showModal();
+    } else {
+        dialog.setAttribute("open", "");
+    }
+}
+
+function fecharContrachequeAnual() {
+    const dialog = document.getElementById("popupContrachequeAnual");
+    if (!dialog) return;
+    if (typeof dialog.close === "function" && dialog.open) {
+        dialog.close();
+    } else {
+        dialog.removeAttribute("open");
+    }
+}
+
 document.addEventListener("DOMContentLoaded", () => {
     const tipoTeto = document.getElementById("tipoTeto");
     const grupoTetoInformado = document.getElementById("grupoTetoInformado");
@@ -1200,6 +1728,17 @@ document.addEventListener("DOMContentLoaded", () => {
                 document.getElementById("tipoTeto").dispatchEvent(new Event("change"));
             }
             calcSallary();
+        });
+    }
+
+    const botaoFecharPopup = document.getElementById("fecharPopupAnual");
+    if (botaoFecharPopup) {
+        botaoFecharPopup.addEventListener("click", fecharContrachequeAnual);
+    }
+    const dialogAnual = document.getElementById("popupContrachequeAnual");
+    if (dialogAnual) {
+        dialogAnual.addEventListener("click", (evento) => {
+            if (evento.target === dialogAnual) fecharContrachequeAnual();
         });
     }
 
