@@ -1214,22 +1214,35 @@ function calcularAnoContracheques(entrada, folhaBase) {
     const abatePrTrimestral = abatePrPorMes * 3;
 
     // 3. Férias (1/3 constitucional sobre a remuneração, pago no mês de férias — padrão: abril)
+    // Tributação em separado na fonte (sem RPPS/Prevcom); usa o maior entre dependentes e desconto simplificado (R$ 607,20).
     const temFeriasNoAno = !aposentado && mesFerias >= 1 && mesFerias <= 12;
     const brutoTercoFerias = temFeriasNoAno ? (remuneracaoMensal / 3) : 0;
     const abateTercoFerias = Math.max(0, brutoTercoFerias - (entrada.teto / 3));
     const baseTercoFerias = brutoTercoFerias - abateTercoFerias;
+    const deducaoIrrfFerias = Math.max(entrada.dependentesIRRF * 189.59, 607.20);
     const irrfTercoFerias = temFeriasNoAno
-        ? calcularIRRF(baseTercoFerias - (entrada.dependentesIRRF * 189.59))
+        ? calcularIRRF(baseTercoFerias - deducaoIrrfFerias)
         : 0;
 
-    // 4. 13º Salário (tributação exclusiva em dezembro; se houver adiantamento de 50%, sai sem desconto no mês escolhido e desconta em dezembro)
+    // 4. 13º Salário (se houver adiantamento de 50% no aniversário, RPPS e Prevcom incidem na 1ª parcela e o saldo + IRRF em dezembro)
     const bruto13Total = remuneracaoMensal;
     const abate13Total = Math.max(0, bruto13Total - entrada.teto);
     const base13Total = bruto13Total - abate13Total;
-    const valorAdiantamento13 = (mesAdiantamento13 >= 1 && mesAdiantamento13 <= 11)
-        ? (base13Total / 2)
-        : 0;
+    const temAdiantamento13NoAno = mesAdiantamento13 >= 1 && mesAdiantamento13 <= 11;
+    const brutoAdiantamento13 = temAdiantamento13NoAno ? (bruto13Total / 2) : 0;
+    const abateAdiantamento13 = temAdiantamento13NoAno ? (abate13Total / 2) : 0;
+    const baseAdiantamento13 = base13Total / 2;
     const descontos13 = calcularDescontosSobreBase(base13Total, entrada, folhaBase, false);
+
+    const faixas13 = entrada.regimePrevidenciario === "RPPS" ? FAIXAS_RPPS : FAIXAS_RGPS;
+    const rppsAdiantamento13 = temAdiantamento13NoAno
+        ? (aposentado
+            ? Math.max(0, baseAdiantamento13 - (TETO_INSS / 2)) * 0.16
+            : calcularFaixasProgressivas(baseAdiantamento13, faixas13))
+        : 0;
+    const prevCompAdiantamento13 = temAdiantamento13NoAno
+        ? Math.max(0, baseAdiantamento13 - (TETO_INSS / 2)) * entrada.previdenciaComplementar
+        : 0;
 
     // 5. Indenizações separadas: Abono Permanência & Outras Indenizações (Transporte) e Auxílio Alimentação à parte
     const outrasIndenizacoesMensal = folhaBase.auxilioTransporte;
@@ -1242,13 +1255,13 @@ function calcularAnoContracheques(entrada, folhaBase) {
         const trimPr = mes % 3 === 0 ? (mes / 3) : 0;
         const temPr = trimPr > 0 && prTrimestralBruta > 0;
         const eFerias = temFeriasNoAno && mes === mesFerias;
-        const eAdiantamento13 = valorAdiantamento13 > 0 && mes === mesAdiantamento13;
+        const eAdiantamento13 = temAdiantamento13NoAno && mes === mesAdiantamento13;
         const eQuitacao13 = mes === 12;
 
         const feriasBrutoMes = eFerias ? brutoTercoFerias : 0;
         const decimoBrutoPortalMes =
-            (eAdiantamento13 ? valorAdiantamento13 : 0) +
-            (eQuitacao13 ? (bruto13Total - valorAdiantamento13) : 0);
+            (eAdiantamento13 ? brutoAdiantamento13 : 0) +
+            (eQuitacao13 ? (bruto13Total - brutoAdiantamento13) : 0);
         const feriasEDecimoMes = feriasBrutoMes + decimoBrutoPortalMes;
 
         const pagamentosEventuaisMes = temPr ? prTrimestralBruta : 0;
@@ -1258,7 +1271,9 @@ function calcularAnoContracheques(entrada, folhaBase) {
 
         const abatePrMes = temPr ? abatePrTrimestral : 0;
         const abateFeriasMes = eFerias ? abateTercoFerias : 0;
-        const abate13Mes = eQuitacao13 ? abate13Total : 0;
+        const abate13Mes =
+            (eAdiantamento13 ? abateAdiantamento13 : 0) +
+            (eQuitacao13 ? (abate13Total - abateAdiantamento13) : 0);
         const redutorSalarialMes = abateRemuneracaoMensal + abatePrMes + abateFeriasMes + abate13Mes;
 
         // Base mensal (Remuneração + PR trimestral após o redutor)
@@ -1267,8 +1282,12 @@ function calcularAnoContracheques(entrada, folhaBase) {
             (pagamentosEventuaisMes - abatePrMes);
         const descMensal = calcularDescontosSobreBase(baseTributavelMensal, entrada, folhaBase, true);
 
-        const rppsExtra = eQuitacao13 ? descontos13.rpps : 0;
-        const prevCompExtra = eQuitacao13 ? descontos13.prevComp : 0;
+        const rppsExtra =
+            (eAdiantamento13 ? rppsAdiantamento13 : 0) +
+            (eQuitacao13 ? Math.max(0, descontos13.rpps - rppsAdiantamento13) : 0);
+        const prevCompExtra =
+            (eAdiantamento13 ? prevCompAdiantamento13 : 0) +
+            (eQuitacao13 ? Math.max(0, descontos13.prevComp - prevCompAdiantamento13) : 0);
         const irrfExtra = (eFerias ? irrfTercoFerias : 0) + (eQuitacao13 ? descontos13.irrf : 0);
         const saudeExtra = eQuitacao13 ? descontos13.saude : 0;
         const descontosExtraTotal = rppsExtra + prevCompExtra + irrfExtra + saudeExtra;
@@ -1286,7 +1305,7 @@ function calcularAnoContracheques(entrada, folhaBase) {
         const badges = [];
         if (eFerias) badges.push({ texto: "Férias (1/3)", classe: "badge-ferias" });
         if (eAdiantamento13) badges.push({ texto: "1ª parc. 13º", classe: "badge-13" });
-        if (eQuitacao13) badges.push({ texto: valorAdiantamento13 > 0 ? "2ª parc. 13º" : "13º Salário", classe: "badge-13" });
+        if (eQuitacao13) badges.push({ texto: temAdiantamento13NoAno ? "2ª parc. 13º" : "13º Salário", classe: "badge-13" });
         if (temPr) badges.push({ texto: `PR ${trimPr}º Tri`, classe: "badge-pr" });
 
         meses.push({
