@@ -622,7 +622,14 @@
         if (ferias.length > 3) push("danger", "Há " + ferias.length + " períodos de férias. O limite é 3.");
         ferias.forEach(function (run, idx) {
             if (!run.start.plain) push("danger", "O " + (idx + 1) + "º período começa em " + Engine.fmt(run.start.iso) + ", dia que já seria folga.");
-            if (!run.end.plain) push("danger", "O " + (idx + 1) + "º período termina em " + Engine.fmt(run.end.iso) + ", dia que já seria folga.");
+            if (!run.end.plain) {
+                const ativo = state.plans.find(function (p) { return p.id === state.activeId; });
+                if (run.end.weekend && ativo && ativo.label === "Máximo dias úteis") {
+                    push("ok", "O " + (idx + 1) + "º período termina em " + Engine.fmt(run.end.iso) + ", fim de semana. A estratégia Máximo dias úteis aceita isso para cobrir mais dias úteis.");
+                } else {
+                    push("danger", "O " + (idx + 1) + "º período termina em " + Engine.fmt(run.end.iso) + ", dia que já seria folga.");
+                }
+            }
         });
         if ((report.used.lp || 0) >= 15) {
             periodos("lp").forEach(function (run) {

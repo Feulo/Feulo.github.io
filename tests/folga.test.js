@@ -115,7 +115,11 @@ test("a busca devolve descanso em dias e respeita férias, ATIN e PR", () => {
         assert.equal(ferias.length, 3);
         ferias.forEach((bloco) => {
             assert.ok(bloco.startDow >= 1 && bloco.startDow <= 5);
-            assert.ok(bloco.endDow >= 1 && bloco.endDow <= 5);
+            if (plano.label === "Máximo dias úteis") {
+                assert.ok(bloco.endDow === 0 || bloco.endDow === 6 || (bloco.endDow >= 1 && bloco.endDow <= 5));
+            } else {
+                assert.ok(bloco.endDow >= 1 && bloco.endDow <= 5);
+            }
             assert.ok(bloco.counts.every((dias) => dias <= 20));
         });
         const abonadasPorMes = {};
@@ -135,16 +139,26 @@ test("a busca devolve descanso em dias e respeita férias, ATIN e PR", () => {
     assert.equal(menor.used.lp, 0);
 });
 
-test("Máximo dias úteis cobre 24 dias úteis com os 30 corridos", () => {
+test("Máximo dias úteis cobre 25 dias úteis terminando um período no sábado", () => {
     const resultado = Folga.optimize(modelo(), base);
     const uteis = resultado.plans.find((plano) => plano.label === "Máximo dias úteis");
     assert.ok(uteis);
-    assert.ok(uteis.feriasUteis >= 24);
+    assert.ok(uteis.feriasUteis >= 25);
     assert.equal(uteis.feriasDays, 30);
     assert.equal(uteis.atinOk, true);
     assert.equal(uteis.prOk, true);
+    const ferias = uteis.blocks.filter((bloco) => bloco.type === "ferias");
+    assert.ok(ferias.some((bloco) => bloco.endDow === 6 || bloco.endDow === 0));
+    ferias.forEach((bloco) => {
+        assert.ok(bloco.startDow >= 1 && bloco.startDow <= 5);
+    });
     resultado.plans.forEach((plano) => {
         assert.ok((plano.feriasUteis || 0) <= uteis.feriasUteis);
+        if (plano.label !== "Máximo dias úteis") {
+            plano.blocks.filter((bloco) => bloco.type === "ferias").forEach((bloco) => {
+                assert.ok(bloco.endDow >= 1 && bloco.endDow <= 5);
+            });
+        }
     });
 });
 

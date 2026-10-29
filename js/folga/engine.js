@@ -500,7 +500,20 @@
       };
     }
 
-    function enumerate(model, cfg, fixedOcc, baseCounts) {
+    function endAllowed(end, allowWeekendEnd) {
+      if (!end) return false;
+      if (end.plain) return true;
+      return Boolean(allowWeekendEnd && end.weekend);
+    }
+
+    function setEndsOnWeekend(model, blocks) {
+      return (blocks || []).some(function (b) {
+        const day = model.days[b.j];
+        return day && day.weekend;
+      });
+    }
+
+    function enumerate(model, cfg, fixedOcc, baseCounts, allowWeekendEnd) {
       const byLen = Array.from({ length: 31 }, function () { return []; });
       const days = model.days;
       const zeroCounts = baseCounts || [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
@@ -516,7 +529,7 @@
           if (fixedOcc && fixedOcc[j]) break;
           const counts = countMonths(model, i, j);
           if (!monthsOk(addCounts(zeroCounts, counts))) break;
-          if (!end.plain) continue;
+          if (!endAllowed(end, allowWeekendEnd)) continue;
           const info = attachment(model, i, j);
           byLen[len].push(Object.assign({ i: i, j: j, len: len, counts: counts }, info));
         }
@@ -1198,15 +1211,15 @@
       if (totalSlots > 3) {
         return { error: 'Com os períodos já marcados no calendário, seriam necessários mais de 3 períodos para fechar os ' + totalFerias + ' dias.' };
       }
-      const byLen = enumerate(model, cfg, fixedInfo.occ, fixedInfo.baseCounts);
+      const byLen = enumerate(model, cfg, fixedInfo.occ, fixedInfo.baseCounts, false);
       let combined;
+      const targetSlots = targetDays === 0 ? 0 : Math.min(targetDays, requestedMode >= fixedFerias.length + 1 ? requestedMode - fixedFerias.length : 1);
       if (expandFixed && fixedFerias.length > 0) {
         const anchorPools = fixedFerias.map(function (a) {
           return enumerateAnchor(model, a, fixedInfo.occ, fixedInfo.baseCounts);
         });
         combined = combineVacationExpanded(byLen, anchorPools, totalSlots, totalFerias, cfg.minBlock, cfg.minOneBlock, fixedInfo.baseCounts);
       } else {
-        const targetSlots = targetDays === 0 ? 0 : Math.min(targetDays, requestedMode >= fixedFerias.length + 1 ? requestedMode - fixedFerias.length : 1);
         combined = combineVacation(byLen, targetSlots, targetDays, cfg.minBlock, cfg.minOneBlock, fixedFerias, fixedInfo.baseCounts);
       }
       if (combined.error) return combined;
@@ -1215,14 +1228,25 @@
       }
       const plans = [];
       const seen = new Set();
-      combined.sets.forEach(function (set) {
-        ['rest', 'cost', 'streak'].forEach(function (strategy) {
-          const plan = finishPlan(model, byLen, set, cfg, strategy, fixedInfo, expandFixed && fixedFerias.length > 0, fixedMap);
-          if (!plan || seen.has(plan.signature)) return;
-          seen.add(plan.signature);
-          plans.push(plan);
+      function addSets(sets, weekendEnd) {
+        (sets || []).forEach(function (set) {
+          ['rest', 'cost', 'streak'].forEach(function (strategy) {
+            const plan = finishPlan(model, byLen, set, cfg, strategy, fixedInfo, expandFixed && fixedFerias.length > 0, fixedMap);
+            if (!plan || seen.has(plan.signature)) return;
+            seen.add(plan.signature);
+            plan.weekendEnd = Boolean(weekendEnd || setEndsOnWeekend(model, set));
+            plans.push(plan);
+          });
         });
-      });
+      }
+      addSets(combined.sets, false);
+      if (!expandFixed && targetDays >= 20 && requestedMode >= 3) {
+        const byLenUteis = enumerate(model, cfg, fixedInfo.occ, fixedInfo.baseCounts, true);
+        const combinedUteis = combineVacation(byLenUteis, targetSlots, targetDays, cfg.minBlock, cfg.minOneBlock, fixedFerias, fixedInfo.baseCounts);
+        if (combinedUteis && combinedUteis.sets && combinedUteis.sets.length) {
+          addSets(combinedUteis.sets.filter(function (set) { return setEndsOnWeekend(model, set); }), true);
+        }
+      }
       if (!plans.length) {
         return { error: 'As combinações estouraram a meta de diligências, a trava de 20 dias do ATIN ou o limite de 1/3 da PR. Afrouxe os mínimos, os dias fixados ou o período da busca.' };
       }
@@ -1380,16 +1404,18 @@
     }
 
     function pickStrategies(plans) {
-      const byRest = plans.slice().sort(function (a, b) {
+      const classic = plans.filter(function (p) { return !p.weekendEnd; });
+      const restPool = classic.length ? classic : plans;
+      const byRest = restPool.slice().sort(function (a, b) {
         return b.rest - a.rest || b.longest - a.longest || a.loss - b.loss || a.waste - b.waste;
       });
       const byUteis = plans.slice().sort(function (a, b) {
         return (b.feriasUteis || 0) - (a.feriasUteis || 0) || a.waste - b.waste || b.rest - a.rest;
       });
-      const byCost = plans.slice().sort(function (a, b) {
+      const byCost = restPool.slice().sort(function (a, b) {
         return a.loss - b.loss || a.waste - b.waste || b.minDilMargin - a.minDilMargin || b.rest - a.rest;
       });
-      const byStreak = plans.slice().sort(function (a, b) {
+      const byStreak = restPool.slice().sort(function (a, b) {
         return b.longest - a.longest || b.rest - a.rest || a.loss - b.loss;
       });
       const chosen = [];
@@ -1403,7 +1429,7 @@
         }
       }
       take(byRest, 'Máximo descanso', 'Mais dias reais de folga, usando o saldo que aumenta a emenda sem zerar PR nem ATIN.');
-      take(byUteis, 'Máximo dias úteis', 'Cobre o maior número de dias úteis com os 30 dias corridos, evitando gastar férias em sábado, domingo ou feriado.');
+      take(byUteis, 'Máximo dias úteis', 'Cobre o maior número de dias úteis com os 30 dias corridos. Pode terminar um período no sábado para chegar a 25 úteis; as outras estratégias continuam começando e terminando em dia útil.');
       take(byCost, 'Menor perda', 'Só férias e escala, que não descontam a PR. Abonada, eleitoral e licença-prêmio novas ficam de fora deste cenário.');
       take(byStreak, 'Maior sequência', 'O maior trecho contínuo sem trabalhar, ainda dentro das travas financeiras.');
       byRest.forEach(function (p) {
